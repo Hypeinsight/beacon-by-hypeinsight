@@ -29,21 +29,8 @@ app.use(helmet({
   contentSecurityPolicy: false, // Disable CSP for development
 }));
 
-// CORS configuration
-const corsOptions = {
-  origin: process.env.CORS_ORIGIN || '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-};
-
-// Only enable credentials if origin is not wildcard
-if (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== '*') {
-  corsOptions.credentials = true;
-}
-
-app.use(cors(corsOptions));
+// CORS configuration - wide open for now
+app.use(cors());
 
 // Rate limiting
 const limiter = rateLimit({
