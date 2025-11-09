@@ -1,11 +1,13 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Building2, Activity, TrendingUp, Map } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, TestTube, Settings } from 'lucide-react';
 
 export default function DashboardLayout() {
   const navigation = [
     { name: 'Overview', href: '/overview', icon: LayoutDashboard },
     { name: 'Visitors', href: '/visitors', icon: Users },
     { name: 'Companies', href: '/companies', icon: Building2 },
+    { name: 'Test Tracking', href: '/test', icon: TestTube },
+    { name: 'Setup', href: '/setup', icon: Settings },
   ];
 
   return (

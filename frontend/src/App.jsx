@@ -4,6 +4,8 @@ import Overview from './pages/Overview';
 import Visitors from './pages/Visitors';
 import VisitorDetail from './pages/VisitorDetail';
 import Companies from './pages/Companies';
+import TestTracking from './pages/TestTracking';
+import Setup from './pages/Setup';
 
 function App() {  return (
     <BrowserRouter>
@@ -14,6 +16,8 @@ function App() {  return (
           <Route path="visitors" element={<Visitors />} />
           <Route path="visitors/:clientId" element={<VisitorDetail />} />
           <Route path="companies" element={<Companies />} />
+          <Route path="test" element={<TestTracking />} />
+          <Route path="setup" element={<Setup />} />
           <Route path="*" element={<Navigate to="/overview" replace />} />
         </Route>
       </Routes>
