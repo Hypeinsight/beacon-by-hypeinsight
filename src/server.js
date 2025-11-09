@@ -30,14 +30,20 @@ app.use(helmet({
 }));
 
 // CORS configuration
-app.use(cors({
+const corsOptions = {
   origin: process.env.CORS_ORIGIN || '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
   preflightContinue: false,
   optionsSuccessStatus: 204
-}));
+};
+
+// Only enable credentials if origin is not wildcard
+if (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== '*') {
+  corsOptions.credentials = true;
+}
+
+app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
