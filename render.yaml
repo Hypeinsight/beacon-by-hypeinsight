@@ -37,15 +37,15 @@ services:
         source: /*
         destination: /index.html
 
-databases:
-  - name: beacon-db
-    databaseName: beacon
-    plan: starter
-    region: oregon
-
-services:
+  # Redis Cache
   - type: redis
     name: beacon-redis
     plan: starter
     region: oregon
     maxmemoryPolicy: allkeys-lru
+
+databases:
+  - name: beacon-db
+    databaseName: beacon
+    plan: starter
+    region: oregon
