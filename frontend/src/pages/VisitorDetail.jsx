@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Globe, Monitor, MapPin, Clock, MousePointer, FileText, Scroll, FormInput, ExternalLink, Building2 } from 'lucide-react';
+import { ArrowLeft, Users, Globe, Monitor, MapPin, Clock, MousePointer, FileText, Scroll, FormInput, ExternalLink, Building2, AlertCircle, User } from 'lucide-react';
 import axios from 'axios';
 
 export default function VisitorDetail() {
@@ -33,6 +33,8 @@ export default function VisitorDetail() {
           country: first.ip_country,
           city: first.ip_city,
           company: first.ip_company_name,
+          sessionNumber: first.session_number || 1,
+          isFirstVisit: first.is_first_visit || false,
           utmSource: firstPageView.utm_source,
           utmMedium: firstPageView.utm_medium,
           utmCampaign: firstPageView.utm_campaign,
@@ -52,6 +54,7 @@ export default function VisitorDetail() {
       case 'click': return MousePointer;
       case 'scroll': return Scroll;
       case 'form_submit': return FormInput;
+      case 'form_error': return AlertCircle;
       case 'page_view': return FileText;
       default: return Clock;
     }
@@ -62,6 +65,7 @@ export default function VisitorDetail() {
       case 'click': return '#46B646';
       case 'scroll': return '#00A9BA';
       case 'form_submit': return '#FFCB2B';
+      case 'form_error': return '#ef4444';
       case 'page_view': return '#46B646';
       default: return '#666';
     }
@@ -105,7 +109,7 @@ export default function VisitorDetail() {
       </div>
 
       {/* Visitor Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="flex items-center text-sm text-gray-600 mb-1">
             <Globe className="w-4 h-4 mr-2" />
@@ -146,6 +150,23 @@ export default function VisitorDetail() {
             Total Events
           </div>
           <p className="font-medium text-gray-900">{visitor.events.length}</p>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg border-2" style={{ borderColor: visitor.sessionNumber === 1 ? '#46B646' : '#FFCB2B' }}>
+          <div className="flex items-center text-sm text-gray-600 mb-1">
+            <User className="w-4 h-4 mr-2" />
+            Visitor Status
+          </div>
+          <p className="font-medium text-gray-900">
+            {visitor.sessionNumber === 1 ? (
+              <span style={{ color: '#46B646' }}>🆕 New Visitor</span>
+            ) : (
+              <span style={{ color: '#FFCB2B' }}>Session #{visitor.sessionNumber}</span>
+            )}
+          </p>
+          {visitor.isFirstVisit && (
+            <p className="text-xs text-gray-500">First visit ever</p>
+          )}
         </div>
         
         <div className="bg-white p-4 rounded-lg border-2" style={{ borderColor: visitor.utmSource ? '#FFCB2B' : '#e5e7eb' }}>
@@ -258,6 +279,18 @@ export default function VisitorDetail() {
                         <p className="text-sm text-gray-600">
                           <strong>Time on Page:</strong> {event.time_on_page}s
                         </p>
+                      )}
+                      
+                      {event.event_name === 'form_error' && event.properties?.error_messages && (
+                        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded">
+                          <p className="text-sm font-semibold text-red-800 mb-1">Form Validation Errors:</p>
+                          <p className="text-sm text-red-700">{event.properties.error_messages}</p>
+                          {event.properties.invalid_field_count && (
+                            <p className="text-xs text-red-600 mt-1">
+                              {event.properties.invalid_field_count} field(s) invalid
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

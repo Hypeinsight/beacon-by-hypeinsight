@@ -317,6 +317,8 @@
     
     // Check if form is valid (HTML5 validation)
     if (form.checkValidity && !form.checkValidity()) {
+      // Track form error
+      trackFormError(form);
       return; // Don't track invalid form submissions
     }
     
@@ -332,6 +334,50 @@
         });
       }
     }, 10);
+  }
+
+  /**
+   * Track form validation errors
+   */
+  function trackFormError(form) {
+    const invalidFields = [];
+    const errorMessages = [];
+    
+    // Get all invalid fields
+    const fields = form.querySelectorAll('input, select, textarea');
+    fields.forEach(field => {
+      if (!field.validity.valid) {
+        invalidFields.push({
+          name: field.name || field.id || field.type,
+          type: field.type,
+          error: field.validationMessage
+        });
+        errorMessages.push(field.validationMessage);
+      }
+    });
+    
+    track('form_error', {
+      form_id: form.id || null,
+      form_name: form.name || null,
+      invalid_field_count: invalidFields.length,
+      invalid_fields: invalidFields,
+      error_messages: errorMessages.join(', ')
+    });
+  }
+
+  /**
+   * Track e-commerce events
+   */
+  function trackEcommerce(eventName, productData) {
+    if (!initialized) {
+      console.warn('Beacon not initialized. Call beacon("init", "SITE_ID") first.');
+      return;
+    }
+    
+    const eventData = buildEventData(eventName, {});
+    eventData.ecommerce = productData;
+    queueEvent(eventData);
+    updateSessionActivity();
   }
 
   /**
@@ -386,6 +432,9 @@
         break;
       case 'track':
         track(args[0], args[1]);
+        break;
+      case 'ecommerce':
+        trackEcommerce(args[0], args[1]);
         break;
       default:
         console.warn('Unknown Beacon command:', command);

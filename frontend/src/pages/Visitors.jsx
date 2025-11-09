@@ -33,6 +33,8 @@ export default function Visitors() {
             country: event.ip_country,
             city: event.ip_city,
             company: event.ip_company_name,
+            sessionNumber: event.session_number || 1,
+            isFirstVisit: event.is_first_visit || false,
           };
         }
         visitorMap[clientId].events.push(event);
@@ -145,9 +147,20 @@ export default function Visitors() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="px-3 py-1 text-sm font-semibold rounded-full" style={{ backgroundColor: '#00A9BA20', color: '#00A9BA' }}>
-                      {visitor.events.length} events
-                    </span>
+                    <div className="space-y-1">
+                      <span className="px-3 py-1 text-sm font-semibold rounded-full" style={{ backgroundColor: '#00A9BA20', color: '#00A9BA' }}>
+                        {visitor.events.length} events
+                      </span>
+                      {visitor.sessionNumber === 1 ? (
+                        <span className="block px-3 py-1 text-xs font-semibold rounded-full" style={{ backgroundColor: '#46B64620', color: '#46B646' }}>
+                          🆕 New Visitor
+                        </span>
+                      ) : (
+                        <span className="block px-3 py-1 text-xs font-medium rounded-full" style={{ backgroundColor: '#FFCB2B20', color: '#FFCB2B' }}>
+                          Session #{visitor.sessionNumber}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <div>
