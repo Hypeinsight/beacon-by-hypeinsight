@@ -24,9 +24,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 
-// Security middleware
+// Security middleware - disable CORP to allow cross-origin script loading
 app.use(helmet({
-  contentSecurityPolicy: false, // Disable CSP for development
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: false,
+  crossOriginEmbedderPolicy: false
 }));
 
 // CORS configuration - wide open for now
@@ -54,7 +56,12 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Serve static files (beacon.js tracking script)
+// Serve static files (beacon.js tracking script) with CORS headers
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+});
 app.use(express.static('public'));
 app.use('/tests', express.static('tests'));
 
