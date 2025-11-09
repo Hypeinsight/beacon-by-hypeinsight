@@ -1,18 +1,33 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const poolConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME || 'beacon',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD,
-  min: parseInt(process.env.DB_POOL_MIN) || 2,
-  max: parseInt(process.env.DB_POOL_MAX) || 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-  ssl: process.env.DB_HOST?.includes('render.com') ? { rejectUnauthorized: false } : false,
-};
+let poolConfig;
+
+if (process.env.DATABASE_URL) {
+  // Use DATABASE_URL if provided (Render's standard approach)
+  poolConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    min: parseInt(process.env.DB_POOL_MIN) || 2,
+    max: parseInt(process.env.DB_POOL_MAX) || 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  };
+} else {
+  // Fall back to individual environment variables
+  poolConfig = {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT) || 5432,
+    database: process.env.DB_NAME || 'beacon',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD,
+    min: parseInt(process.env.DB_POOL_MIN) || 2,
+    max: parseInt(process.env.DB_POOL_MAX) || 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+    ssl: process.env.DB_HOST?.includes('render.com') ? { rejectUnauthorized: false } : false,
+  };
+}
 
 const pool = new Pool(poolConfig);
 
