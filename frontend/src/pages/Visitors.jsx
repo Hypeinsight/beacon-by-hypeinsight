@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Globe, Monitor, MapPin, Clock, Activity } from 'lucide-react';
+import { Users, Globe, Monitor, MapPin, Clock, Activity, Building2 } from 'lucide-react';
 import axios from 'axios';
 
 export default function Visitors() {
@@ -89,6 +89,9 @@ export default function Visitors() {
                   Visitor
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.9)' }}>
+                  Company
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.9)' }}>
                   Location
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.9)' }}>
@@ -118,11 +121,15 @@ export default function Visitors() {
                         <Users className="w-5 h-5" style={{ color: '#46B646' }} />
                       </div>
                       <div className="ml-3">
-                        <p className="text-sm font-medium text-gray-900">
-                          {visitor.company || 'Anonymous Visitor'}
-                        </p>
+                        <p className="text-sm font-medium text-gray-900">Visitor</p>
                         <p className="text-xs text-gray-500">ID: {visitor.clientId.substring(0, 8)}...</p>
                       </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center text-sm text-gray-700">
+                      <Building2 className="w-4 h-4 mr-1 text-gray-400" />
+                      {visitor.company || <span className="text-gray-400 italic">Unknown</span>}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -132,12 +139,9 @@ export default function Visitors() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div>
-                      <p className="text-sm text-gray-900 flex items-center">
-                        <Monitor className="w-4 h-4 mr-1 text-gray-400" />
-                        {visitor.browser || 'Unknown'}
-                      </p>
-                      <p className="text-xs text-gray-500">{visitor.os || 'Unknown OS'}</p>
+                    <div className="text-sm text-gray-900 flex items-center">
+                      <Monitor className="w-4 h-4 mr-1 text-gray-400" />
+                      {visitor.browser || 'Unknown'} / {visitor.os || 'Unknown'}
                     </div>
                   </td>
                   <td className="px-6 py-4">
