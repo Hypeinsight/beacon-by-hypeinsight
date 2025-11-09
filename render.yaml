@@ -29,7 +29,6 @@ services:
   - type: web
     name: beacon-dashboard
     env: static
-    region: oregon
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/dist
     routes:
@@ -43,6 +42,7 @@ services:
     plan: starter
     region: oregon
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
 
 databases:
   - name: beacon-db
