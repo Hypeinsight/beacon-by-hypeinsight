@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Globe, Monitor, MapPin, Clock, MousePointer, FileText, Scroll, FormInput, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Users, Globe, Monitor, MapPin, Clock, MousePointer, FileText, Scroll, FormInput, ExternalLink, Building2 } from 'lucide-react';
 import axios from 'axios';
 
 export default function VisitorDetail() {
@@ -105,7 +105,7 @@ export default function VisitorDetail() {
       </div>
 
       {/* Visitor Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="flex items-center text-sm text-gray-600 mb-1">
             <Globe className="w-4 h-4 mr-2" />
@@ -114,6 +114,14 @@ export default function VisitorDetail() {
           <p className="font-medium text-gray-900">
             {[visitor.city, visitor.country].filter(Boolean).join(', ') || 'Unknown'}
           </p>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center text-sm text-gray-600 mb-1">
+            <Building2 className="w-4 h-4 mr-2" />
+            Company
+          </div>
+          <p className="font-medium text-gray-900">{visitor.company || <span className="text-gray-400 italic">Unknown</span>}</p>
         </div>
         
         <div className="bg-white p-4 rounded-lg border border-gray-200">
