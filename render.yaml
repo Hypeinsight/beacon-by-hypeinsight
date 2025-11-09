@@ -47,5 +47,5 @@ services:
 databases:
   - name: beacon-db
     databaseName: beacon
-    plan: free
+    plan: basic-256mb
     region: oregon
