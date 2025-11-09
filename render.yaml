@@ -17,11 +17,6 @@ services:
         fromDatabase:
           name: beacon-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: beacon-redis
-          property: connectionString
       - key: CORS_ORIGIN
         value: https://beacon-dashboard.onrender.com
 
@@ -35,14 +30,6 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
-
-  # Redis Cache
-  - type: redis
-    name: beacon-redis
-    plan: starter
-    region: oregon
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
 
 databases:
   - name: beacon-db
