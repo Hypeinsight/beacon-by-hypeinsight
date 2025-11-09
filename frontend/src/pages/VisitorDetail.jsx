@@ -1,0 +1,264 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Users, Globe, Monitor, MapPin, Clock, MousePointer, FileText, Scroll, FormInput, ExternalLink } from 'lucide-react';
+import axios from 'axios';
+
+export default function VisitorDetail() {
+  const { clientId } = useParams();
+  const navigate = useNavigate();
+  const [visitor, setVisitor] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadVisitorData();
+  }, [clientId]);
+
+  const loadVisitorData = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await axios.get(`${API_URL}/api/debug/events`);
+      const events = response.data.events || [];
+      
+      // Find all events for this visitor
+      const visitorEvents = events.filter(e => e.client_id === clientId);
+      
+      if (visitorEvents.length > 0) {
+        const first = visitorEvents[0];
+        // Get traffic source from first page_view event
+        const firstPageView = visitorEvents.find(e => e.event_name === 'page_view') || first;
+        setVisitor({
+          clientId,
+          browser: first.browser,
+          os: first.operating_system,
+          country: first.ip_country,
+          city: first.ip_city,
+          company: first.ip_company_name,
+          utmSource: firstPageView.utm_source,
+          utmMedium: firstPageView.utm_medium,
+          utmCampaign: firstPageView.utm_campaign,
+          referrer: firstPageView.page_referrer,
+          events: visitorEvents.sort((a, b) => a.event_timestamp - b.event_timestamp)
+        });
+      }
+    } catch (error) {
+      console.error('Error loading visitor:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getEventIcon = (eventName) => {
+    switch(eventName) {
+      case 'click': return MousePointer;
+      case 'scroll': return Scroll;
+      case 'form_submit': return FormInput;
+      case 'page_view': return FileText;
+      default: return Clock;
+    }
+  };
+
+  const getEventColor = (eventName) => {
+    switch(eventName) {
+      case 'click': return '#46B646';
+      case 'scroll': return '#00A9BA';
+      case 'form_submit': return '#FFCB2B';
+      case 'page_view': return '#46B646';
+      default: return '#666';
+    }
+  };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64">
+      <div className="text-gray-500">Loading visitor data...</div>
+    </div>;
+  }
+
+  if (!visitor) {
+    return <div className="text-center py-12">
+      <p className="text-gray-500">Visitor not found</p>
+      <button onClick={() => navigate('/visitors')} className="mt-4 text-blue-600 hover:underline">
+        Back to Visitors
+      </button>
+    </div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <button 
+          onClick={() => navigate('/visitors')}
+          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Visitors
+        </button>
+        
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {visitor.company || 'Anonymous Visitor'}
+            </h1>
+            <p className="mt-2 text-gray-600">Client ID: {visitor.clientId}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Visitor Info Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center text-sm text-gray-600 mb-1">
+            <Globe className="w-4 h-4 mr-2" />
+            Location
+          </div>
+          <p className="font-medium text-gray-900">
+            {[visitor.city, visitor.country].filter(Boolean).join(', ') || 'Unknown'}
+          </p>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center text-sm text-gray-600 mb-1">
+            <Monitor className="w-4 h-4 mr-2" />
+            Browser
+          </div>
+          <p className="font-medium text-gray-900">{visitor.browser || 'Unknown'}</p>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center text-sm text-gray-600 mb-1">
+            <Monitor className="w-4 h-4 mr-2" />
+            OS
+          </div>
+          <p className="font-medium text-gray-900">{visitor.os || 'Unknown'}</p>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center text-sm text-gray-600 mb-1">
+            <Clock className="w-4 h-4 mr-2" />
+            Total Events
+          </div>
+          <p className="font-medium text-gray-900">{visitor.events.length}</p>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg border-2" style={{ borderColor: visitor.utmSource ? '#FFCB2B' : '#e5e7eb' }}>
+          <div className="flex items-center text-sm text-gray-600 mb-1">
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Traffic Source
+          </div>
+          <p className="font-medium text-gray-900">
+            {visitor.utmSource || (visitor.referrer ? 'Referral' : 'Direct')}
+          </p>
+          {visitor.utmMedium && (
+            <p className="text-xs" style={{ color: '#00A9BA' }}>{visitor.utmMedium}</p>
+          )}
+          {visitor.utmCampaign && (
+            <p className="text-xs text-gray-500">{visitor.utmCampaign}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Traffic Source Card */}
+      {(visitor.utmSource || visitor.utmMedium || visitor.utmCampaign || visitor.referrer) && (
+        <div className="bg-white p-6 rounded-lg border-2" style={{ borderColor: '#FFCB2B' }}>
+          <div className="flex items-center mb-3">
+            <ExternalLink className="w-5 h-5 mr-2" style={{ color: '#FFCB2B' }} />
+            <h3 className="text-lg font-semibold text-gray-900">Traffic Source</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {visitor.utmSource && (
+              <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#46B64620', color: '#46B646' }}>
+                Source: {visitor.utmSource}
+              </span>
+            )}
+            {visitor.utmMedium && (
+              <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#00A9BA20', color: '#00A9BA' }}>
+                Medium: {visitor.utmMedium}
+              </span>
+            )}
+            {visitor.utmCampaign && (
+              <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#FFCB2B20', color: '#FFCB2B' }}>
+                Campaign: {visitor.utmCampaign}
+              </span>
+            )}
+          </div>
+          {visitor.referrer && (
+            <p className="text-sm text-gray-600 mt-3">
+              🔗 <strong>Referrer:</strong> {visitor.referrer}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Session Timeline */}
+      <div className="bg-white rounded-lg shadow-md border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200" style={{ backgroundColor: '#02202E' }}>
+          <h2 className="text-lg font-semibold" style={{ color: 'white' }}>Session Timeline</h2>
+        </div>
+        
+        <div className="p-6">
+          <div className="space-y-4">
+            {visitor.events.map((event, idx) => {
+              const Icon = getEventIcon(event.event_name);
+              const color = getEventColor(event.event_name);
+              const time = new Date(parseInt(event.event_timestamp)).toLocaleTimeString();
+              
+              return (
+                <div key={idx} className="flex gap-4">
+                  {/* Timeline line */}
+                  <div className="flex flex-col items-center">
+                    <div 
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: `${color}20` }}
+                    >
+                      <Icon className="w-5 h-5" style={{ color }} />
+                    </div>
+                    {idx < visitor.events.length - 1 && (
+                      <div className="w-0.5 h-full bg-gray-200 my-1" />
+                    )}
+                  </div>
+                  
+                  {/* Event details */}
+                  <div className="flex-1 pb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <span 
+                          className="inline-block px-3 py-1 text-xs font-semibold rounded-full"
+                          style={{ backgroundColor: `${color}20`, color }}
+                        >
+                          {event.event_name.replace('_', ' ')}
+                        </span>
+                        <span className="ml-3 text-sm text-gray-500">{time}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                      <p className="font-medium text-gray-900">{event.page_title || 'Unknown Page'}</p>
+                      
+                      {event.element_text && (
+                        <p className="text-sm text-gray-600">
+                          <strong>Clicked:</strong> "{event.element_text}"
+                        </p>
+                      )}
+                      
+                      {event.scroll_depth && (
+                        <p className="text-sm text-gray-600">
+                          <strong>Scroll Depth:</strong> {event.scroll_depth}%
+                        </p>
+                      )}
+                      
+                      {event.time_on_page && (
+                        <p className="text-sm text-gray-600">
+                          <strong>Time on Page:</strong> {event.time_on_page}s
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

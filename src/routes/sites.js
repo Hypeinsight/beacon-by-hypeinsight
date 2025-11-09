@@ -1,0 +1,73 @@
+/**
+ * Sites Routes: REST API endpoints for site management.
+ *
+ * WHY: Defines the API surface for site CRUD operations.
+ * Supports multi-tenant isolation via agencyId query parameter.
+ */
+const express = require('express');
+const router = express.Router();
+const sitesController = require('../controllers/sitesController');
+
+/**
+ * @route POST /api/sites
+ * @desc Create a new site
+ * @body {name, domain, agencyId?, config?}
+ * @returns {object} Created site
+ */
+router.post('/', sitesController.createSite);
+
+/**
+ * @route GET /api/sites
+ * @desc Get all sites
+ * @query {agencyId?, status?, limit?, offset?}
+ * @returns {array} List of sites
+ */
+router.get('/', sitesController.getSites);
+
+/**
+ * @route GET /api/sites/:id
+ * @desc Get site by ID
+ * @param {string} id - Site ID
+ * @query {agencyId?} - For agency isolation
+ * @returns {object} Site
+ */
+router.get('/:id', sitesController.getSite);
+
+/**
+ * @route PUT /api/sites/:id
+ * @desc Update site
+ * @param {string} id - Site ID
+ * @query {agencyId?} - For agency isolation
+ * @body {name?, domain?, config?, status?}
+ * @returns {object} Updated site
+ */
+router.put('/:id', sitesController.updateSite);
+
+/**
+ * @route DELETE /api/sites/:id
+ * @desc Delete site (soft delete)
+ * @param {string} id - Site ID
+ * @query {agencyId?} - For agency isolation
+ * @returns {object} Success message
+ */
+router.delete('/:id', sitesController.deleteSite);
+
+/**
+ * @route GET /api/sites/:id/script
+ * @desc Get tracking script snippet for a site
+ * @param {string} id - Site ID
+ * @query {agencyId?} - For agency isolation
+ * @returns {object} Script snippet
+ */
+router.get('/:id/script', sitesController.getTrackingScript);
+
+/**
+ * @route GET /api/sites/:id/stats
+ * @desc Get site statistics
+ * @param {string} id - Site ID
+ * @query {agencyId?} - For agency isolation
+ * @returns {object} Site statistics
+ */
+router.get('/:id/stats', sitesController.getSiteStats);
+
+module.exports = router;

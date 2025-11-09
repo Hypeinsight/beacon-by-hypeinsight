@@ -1,0 +1,870 @@
+openapi: 3.0.3
+info:
+  title: Beacon API
+  description: |
+    Beacon by Hype Insight - Server-side tracking solution API
+    
+    This API provides endpoints for:
+    - Event tracking (single and batch)
+    - Site management (multi-tenant)
+    - Agency management
+    - Health monitoring
+    
+    ## Authentication
+    Agency endpoints require API key authentication via `X-API-Key` header.
+    
+  version: 0.1.0
+  contact:
+    name: Hype Insight
+    email: support@hypeinsight.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://api.beacon.hypeinsight.com
+    description: Production server
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Tracking
+    description: Event tracking endpoints
+  - name: Sites
+    description: Site management endpoints
+  - name: Agencies
+    description: Agency management endpoints
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Agency API key for authentication
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Error message"
+
+    Event:
+      type: object
+      required:
+        - eventName
+        - siteId
+      properties:
+        eventName:
+          type: string
+          example: "page_view"
+        siteId:
+          type: string
+          example: "site-123"
+        clientId:
+          type: string
+          example: "client-abc-123"
+        sessionId:
+          type: string
+          example: "session-xyz-456"
+        timestamp:
+          type: integer
+          format: int64
+          example: 1699564800000
+        pageUrl:
+          type: string
+          example: "https://example.com/products"
+        pageTitle:
+          type: string
+          example: "Products Page"
+        referrer:
+          type: string
+          example: "https://google.com"
+        utmSource:
+          type: string
+          example: "google"
+        utmMedium:
+          type: string
+          example: "cpc"
+        utmCampaign:
+          type: string
+          example: "summer_sale"
+        properties:
+          type: object
+          additionalProperties: true
+
+    Site:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        agencyId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "My Website"
+        domain:
+          type: string
+          example: "example.com"
+        scriptId:
+          type: string
+          example: "abc123def456"
+        config:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+          enum: [active, paused, deleted]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Agency:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Marketing Agency Inc"
+        email:
+          type: string
+          format: email
+          example: "contact@agency.com"
+        config:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+          enum: [active, suspended, deleted]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        apiKey:
+          type: string
+          description: Only returned on creation and regeneration
+          example: "beacon_abc123def456..."
+
+paths:
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: Basic health check
+      description: Returns basic health status of the API
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/health/detailed:
+    get:
+      tags:
+        - Health
+      summary: Detailed health check
+      description: Returns detailed health status including database and Redis
+      security: []
+      responses:
+        '200':
+          description: Detailed health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  services:
+                    type: object
+                    properties:
+                      database:
+                        type: string
+                        example: "connected"
+                      redis:
+                        type: string
+                        example: "connected"
+
+  /api/track/event:
+    post:
+      tags:
+        - Tracking
+      summary: Track a single event
+      description: Records a single tracking event with automatic IP enrichment
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+            example:
+              eventName: "page_view"
+              siteId: "abc123def456"
+              clientId: "client-123"
+              sessionId: "session-456"
+              pageUrl: "https://example.com/products"
+              pageTitle: "Products"
+              utmSource: "google"
+              utmMedium: "cpc"
+      responses:
+        '201':
+          description: Event tracked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  eventId:
+                    type: string
+                    format: uuid
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/track/batch:
+    post:
+      tags:
+        - Tracking
+      summary: Track multiple events
+      description: Records multiple tracking events in a single request
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                events:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Event'
+      responses:
+        '201':
+          description: Events tracked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 5
+
+  /api/track/user/{userId}:
+    get:
+      tags:
+        - Tracking
+      summary: Get events by user
+      description: Retrieves all events for a specific user (client_id)
+      security: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: User events retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /api/track/session/{sessionId}:
+    get:
+      tags:
+        - Tracking
+      summary: Get events by session
+      description: Retrieves all events for a specific session
+      security: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Session events retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /api/sites:
+    get:
+      tags:
+        - Sites
+      summary: Get all sites
+      description: Retrieves list of sites with optional filtering
+      parameters:
+        - name: agencyId
+          in: query
+          description: Filter by agency ID
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by status
+          schema:
+            type: string
+            enum: [active, paused, deleted]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Sites retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Site'
+                  count:
+                    type: integer
+
+    post:
+      tags:
+        - Sites
+      summary: Create a new site
+      description: Creates a new site with auto-generated script ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - domain
+              properties:
+                name:
+                  type: string
+                  example: "My Website"
+                domain:
+                  type: string
+                  example: "example.com"
+                agencyId:
+                  type: string
+                  format: uuid
+                config:
+                  type: object
+      responses:
+        '201':
+          description: Site created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Site'
+
+  /api/sites/{id}:
+    get:
+      tags:
+        - Sites
+      summary: Get site by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: agencyId
+          in: query
+          description: For agency isolation
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Site retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Site'
+        '404':
+          description: Site not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Sites
+      summary: Update site
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: agencyId
+          in: query
+          description: For agency isolation
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                domain:
+                  type: string
+                config:
+                  type: object
+                status:
+                  type: string
+                  enum: [active, paused, deleted]
+      responses:
+        '200':
+          description: Site updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Site'
+
+    delete:
+      tags:
+        - Sites
+      summary: Delete site (soft delete)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: agencyId
+          in: query
+          description: For agency isolation
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Site deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /api/sites/{id}/script:
+    get:
+      tags:
+        - Sites
+      summary: Get tracking script
+      description: Returns the HTML script snippet for embedding on the site
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: agencyId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Script retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      scriptId:
+                        type: string
+                      script:
+                        type: string
+                        example: "<!-- Beacon Tracking Script -->\n<script>...</script>"
+
+  /api/sites/{id}/stats:
+    get:
+      tags:
+        - Sites
+      summary: Get site statistics
+      description: Returns event count, session count, and visitor count for a site
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: agencyId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      site:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                          domain:
+                            type: string
+                      stats:
+                        type: object
+                        properties:
+                          total_events:
+                            type: integer
+                          total_sessions:
+                            type: integer
+                          total_visitors:
+                            type: integer
+                          last_event:
+                            type: string
+                            format: date-time
+
+  /api/agencies:
+    get:
+      tags:
+        - Agencies
+      summary: Get all agencies
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, suspended, deleted]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Agencies retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Agency'
+                  count:
+                    type: integer
+
+    post:
+      tags:
+        - Agencies
+      summary: Create a new agency
+      description: Creates an agency with auto-generated API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                config:
+                  type: object
+      responses:
+        '201':
+          description: Agency created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Agency'
+                  message:
+                    type: string
+                    example: "Agency created successfully. Save the API key - it will not be shown again."
+
+  /api/agencies/{id}:
+    get:
+      tags:
+        - Agencies
+      summary: Get agency by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agency retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Agency'
+
+    put:
+      tags:
+        - Agencies
+      summary: Update agency
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                config:
+                  type: object
+                status:
+                  type: string
+                  enum: [active, suspended, deleted]
+      responses:
+        '200':
+          description: Agency updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Agency'
+
+    delete:
+      tags:
+        - Agencies
+      summary: Delete agency (soft delete)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agency deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /api/agencies/{id}/regenerate-key:
+    post:
+      tags:
+        - Agencies
+      summary: Regenerate API key
+      description: Generates a new API key for the agency (invalidates old key)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: API key regenerated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Agency'
+                  message:
+                    type: string
+                    example: "API key regenerated successfully. Save it - it will not be shown again."
+
+  /api/agencies/{id}/stats:
+    get:
+      tags:
+        - Agencies
+      summary: Get agency statistics
+      description: Returns site count and event count for an agency
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      agency:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                      stats:
+                        type: object
+                        properties:
+                          siteCount:
+                            type: integer
+                          eventCount:
+                            type: integer

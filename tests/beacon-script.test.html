@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beacon Tracking Script Test Page</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+    h1 { color: #2c3e50; }
+    .section {
+      background: #f8f9fa;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border-left: 4px solid #4A90E2;
+    }
+    button {
+      background: #4A90E2;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #357ABD;
+    }
+    #console {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px;
+      border-left: 3px solid #4A90E2;
+      padding-left: 10px;
+    }
+    .success { border-left-color: #27ae60; }
+    .info { border-left-color: #3498db; }
+    .warning { border-left-color: #f39c12; }
+    form {
+      margin-top: 20px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .tall-content {
+      height: 800px;
+      background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+      padding: 20px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚀 Beacon Tracking Script Test Page</h1>
+  
+  <div class="section">
+    <h2>Test Instructions</h2>
+    <p>This page tests the Beacon tracking script. Make sure the Beacon server is running on <code>http://localhost:3000</code></p>
+    <p><strong>What's being tracked:</strong></p>
+    <ul>
+      <li>✅ Page views (automatic)</li>
+      <li>✅ Button clicks</li>
+      <li>✅ Form submissions</li>
+      <li>✅ Scroll depth (25%, 50%, 75%, 100%)</li>
+      <li>✅ User engagement (every 10 seconds)</li>
+      <li>✅ Session management (client_id, session_id)</li>
+      <li>✅ UTM parameters (from URL)</li>
+      <li>✅ Device data (screen, viewport, timezone)</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Interactive Tests</h2>
+    
+    <h3>1. Click Tracking</h3>
+    <button onclick="testClick()">Test Click Event</button>
+    <button id="cta-button">Call-to-Action Button</button>
+    <a href="#test">Test Link Click</a>
+
+    <h3>2. Custom Event Tracking</h3>
+    <button onclick="trackCustomEvent()">Track Custom Event</button>
+
+    <h3>3. Form Submission</h3>
+    <form id="test-form" onsubmit="return handleSubmit(event)">
+      <input type="text" name="name" placeholder="Your Name" required>
+      <input type="email" name="email" placeholder="Your Email" required>
+      <textarea name="message" placeholder="Your Message" rows="4" required></textarea>
+      <button type="submit">Submit Form</button>
+    </form>
+  </div>
+
+  <div class="section">
+    <h2>Event Console</h2>
+    <div id="console"></div>
+  </div>
+
+  <div class="tall-content">
+    <h2>Scroll Down to Test Scroll Tracking</h2>
+    <p>Scroll depth is tracked at 25%, 50%, 75%, and 100%.</p>
+    <p>Keep scrolling... ⬇️</p>
+    <div style="margin-top: 300px;">
+      <p>Half way there! 🎯</p>
+    </div>
+    <div style="margin-top: 300px;">
+      <p>Almost at the bottom! 🚀</p>
+    </div>
+  </div>
+
+  <!-- Beacon Tracking Script -->
+  <script>
+    // Async loader (production style)
+    (function(w,d,s,o,f,js,fjs){
+      w['BeaconObject']=o;w[o]=w[o]||function(){(w[o].q=w[o].q||[]).push(arguments)};
+      js=d.createElement(s),fjs=d.getElementsByTagName(s)[0];
+      js.id=o;js.src=f;js.async=1;
+      js.onload=function(){beacon('init','fd565af1070d4955');};
+      fjs.parentNode.insertBefore(js,fjs);
+    }(window,document,'script','beacon','/beacon-dev.js'));
+  </script>
+
+  <!-- Test Scripts -->
+  <script>
+    const consoleEl = document.getElementById('console');
+
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      consoleEl.appendChild(entry);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    // Override console methods to show in our console
+    const originalLog = console.log;
+    const originalWarn = console.warn;
+    const originalError = console.error;
+
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+      log(args.join(' '), 'info');
+    };
+
+    console.warn = function(...args) {
+      originalWarn.apply(console, args);
+      log(args.join(' '), 'warning');
+    };
+
+    console.error = function(...args) {
+      originalError.apply(console, args);
+      log(args.join(' '), 'error');
+    };
+
+    function testClick() {
+      log('✅ Button clicked - event will be queued', 'success');
+    }
+
+    function trackCustomEvent() {
+      if (typeof beacon !== 'undefined') {
+        beacon('track', 'custom_test_event', {
+          test_property: 'test_value',
+          timestamp: Date.now()
+        });
+        log('✅ Custom event tracked', 'success');
+      } else {
+        log('❌ Beacon not loaded yet', 'error');
+      }
+    }
+
+    function handleSubmit(event) {
+      event.preventDefault();
+      log('✅ Form submitted - event tracked', 'success');
+      setTimeout(() => {
+        document.getElementById('test-form').reset();
+      }, 500);
+      return false;
+    }
+
+    // Log page load
+    window.addEventListener('load', () => {
+      log('✅ Page loaded', 'success');
+      log('🔍 Check browser localStorage for: _beacon_client_id, _beacon_session_id', 'info');
+      log('🔍 Check browser sessionStorage for UTM parameters', 'info');
+      log('🔍 Check Network tab for beacon tracking requests', 'info');
+    });
+
+    // Log scroll milestones
+    let loggedScrolls = new Set();
+    window.addEventListener('scroll', () => {
+      const scrollPercent = Math.floor((window.pageYOffset / (document.documentElement.scrollHeight - window.innerHeight)) * 100);
+      [25, 50, 75, 100].forEach(milestone => {
+        if (scrollPercent >= milestone && !loggedScrolls.has(milestone)) {
+          loggedScrolls.add(milestone);
+          log(`📊 Scroll ${milestone}% tracked`, 'success');
+        }
+      });
+    });
+
+    // Show session info
+    setTimeout(() => {
+      const clientId = localStorage.getItem('_beacon_client_id');
+      const sessionId = localStorage.getItem('_beacon_session_id');
+      if (clientId && sessionId) {
+        log(`👤 Client ID: ${clientId}`, 'info');
+        log(`🔗 Session ID: ${sessionId}`, 'info');
+      }
+    }, 1000);
+  </script>
+</body>
+</html>
