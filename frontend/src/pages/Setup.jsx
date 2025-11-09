@@ -207,9 +207,9 @@ export default function Setup() {
 
           {/* Privacy & Compliance */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-blue-900 mb-2">🔒 Privacy & Compliance</h4>
+            <h4 className="text-sm font-semibold text-blue-900 mb-2">🔒 Privacy & Data</h4>
             <p className="text-xs text-blue-800">
-              Beacon is designed with privacy in mind. All PII is hashed using SHA-256. The tracking is GDPR and CCPA compliant when configured properly.
+              Beacon uses server-side tracking with first-party data collection. The system is designed for privacy-first architecture. Full GDPR/CCPA compliance features are in development.
             </p>
           </div>
 
