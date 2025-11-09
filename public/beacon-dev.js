@@ -309,15 +309,29 @@
   }
 
   /**
-   * Track form submissions
+   * Track form submissions (only successful ones)
+   * Uses submit event which fires BEFORE validation, so we need to check validity
    */
   function trackFormSubmit(event) {
     const form = event.target;
-    track('form_submit', {
-      form_id: form.id || null,
-      form_name: form.name || null,
-      form_action: form.action || null,
-    });
+    
+    // Check if form is valid (HTML5 validation)
+    if (form.checkValidity && !form.checkValidity()) {
+      return; // Don't track invalid form submissions
+    }
+    
+    // Track after a short delay to ensure the submission wasn't prevented
+    // This catches preventDefault() calls from custom validation
+    setTimeout(() => {
+      // Only track if form wasn't cancelled
+      if (!event.defaultPrevented) {
+        track('form_submit', {
+          form_id: form.id || null,
+          form_name: form.name || null,
+          form_action: form.action || null,
+        });
+      }
+    }, 10);
   }
 
   /**
