@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 2.1.1
+ * Version: 2.2.0
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '2.1.1';
+  const VERSION = '2.2.0';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -558,22 +558,35 @@
       console.log('[Beacon] dataLayer.push called with:', arguments);
       var result = originalPush.apply(window.dataLayer, arguments);
       
-      // Check for GTM argument format: dataLayer.push('event', 'add_to_cart', {...})
-      if (arguments.length >= 3 && arguments[0] === 'event' && typeof arguments[1] === 'string') {
-        console.log('[Beacon] Detected GTM format:', arguments[1]);
-        var eventName = arguments[1];
-        var eventData = arguments[2] || {};
-        processEvent(eventName, eventData);
-      }
-      // Check for object format: dataLayer.push({event: 'add_to_cart', ecommerce: {...}})
-      else {
-        for (var i = 0; i < arguments.length; i++) {
-          var event = arguments[i];
-          if (!event || typeof event !== 'object') continue;
-          
-          if (event.event) {
-            processEvent(event.event, event);
+      // Process each argument
+      for (var i = 0; i < arguments.length; i++) {
+        var arg = arguments[i];
+        
+        // GTM sometimes wraps in another Arguments object
+        if (arg && typeof arg === 'object' && arg.length !== undefined && !Array.isArray(arg)) {
+          // It's an Arguments-like object, check if it contains GTM format
+          if (arg.length >= 3 && arg[0] === 'event' && typeof arg[1] === 'string') {
+            console.log('[Beacon] Detected wrapped GTM format:', arg[1]);
+            var eventName = arg[1];
+            var eventData = arg[2] || {};
+            processEvent(eventName, eventData);
+            continue;
           }
+        }
+        
+        // Direct GTM argument format: dataLayer.push('event', 'add_to_cart', {...})
+        if (arguments.length >= 3 && arguments[0] === 'event' && typeof arguments[1] === 'string') {
+          console.log('[Beacon] Detected direct GTM format:', arguments[1]);
+          var eventName = arguments[1];
+          var eventData = arguments[2] || {};
+          processEvent(eventName, eventData);
+          break;
+        }
+        
+        // Standard object format: dataLayer.push({event: 'add_to_cart', ecommerce: {...}})
+        if (arg && typeof arg === 'object' && arg.event) {
+          console.log('[Beacon] Detected object format:', arg.event);
+          processEvent(arg.event, arg);
         }
       }
       
