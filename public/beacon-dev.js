@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 1.3.0
+ * Version: 1.4.0
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '1.3.0';
+  const VERSION = '1.4.0';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -395,6 +395,60 @@
   }
 
   /**
+   * Universal form tracking - works with any form system
+   * Strategy: Mark form attempts in localStorage, track success on thank-you pages
+   */
+  function setupFormTracking() {
+    // 1. Detect form submissions and mark them
+    document.addEventListener('submit', function(e) {
+      const form = e.target;
+      if (form.tagName === 'FORM') {
+        // Store that a form was just submitted
+        localStorage.setItem(STORAGE_PREFIX + 'form_submitted', JSON.stringify({
+          form_id: form.id || null,
+          form_action: form.action || window.location.href,
+          timestamp: Date.now()
+        }));
+      }
+    }, true);
+    
+    // 2. Check if we just came from a form submission
+    const recentSubmit = localStorage.getItem(STORAGE_PREFIX + 'form_submitted');
+    if (recentSubmit) {
+      try {
+        const submitData = JSON.parse(recentSubmit);
+        const timeSinceSubmit = Date.now() - submitData.timestamp;
+        
+        // If submission was within last 10 seconds, this might be a success page
+        if (timeSinceSubmit < 10000) {
+          // Check for success indicators in URL or page
+          const url = window.location.href.toLowerCase();
+          const hasSuccessIndicator = 
+            url.includes('thank') ||
+            url.includes('success') ||
+            url.includes('confirmation') ||
+            url.includes('complete') ||
+            document.body.textContent.toLowerCase().includes('thank you');
+          
+          if (hasSuccessIndicator) {
+            // This looks like a success page!
+            track('form_submit', {
+              form_id: submitData.form_id,
+              success_page: window.location.pathname,
+              detection_method: 'url_pattern'
+            });
+          }
+        }
+        
+        // Clear the submission marker
+        localStorage.removeItem(STORAGE_PREFIX + 'form_submitted');
+      } catch (e) {
+        localStorage.removeItem(STORAGE_PREFIX + 'form_submitted');
+      }
+    }
+  }
+
+  /**
    * Track page unload
    */
   function trackUnload() {
@@ -424,10 +478,11 @@
     // Set up event listeners
     window.addEventListener('scroll', trackScroll, { passive: true });
     document.addEventListener('click', trackClick, true);
-    // Note: Form tracking disabled - use beacon('track', 'form_submit', {}) manually after validation
-    // document.addEventListener('submit', trackFormSubmit, true);
     window.addEventListener('beforeunload', trackUnload);
     window.addEventListener('pagehide', trackUnload);
+    
+    // Set up universal form tracking
+    setupFormTracking();
 
     // Update activity on user interaction
     ['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(event => {
