@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 2.1.0
+ * Version: 2.1.1
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '2.1.0';
+  const VERSION = '2.1.1';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -513,10 +513,12 @@
     
     // Helper to process a single event
     function processEvent(eventName, eventData) {
+      console.log('[Beacon] dataLayer event detected:', eventName, eventData);
       switch(eventName) {
         case 'add_to_cart':
         case 'dl_add_to_cart':
         case 'addToCart':
+          console.log('[Beacon] Tracking add_to_cart');
           trackEcommerce('add_to_cart', eventData.ecommerce || eventData);
           break;
         
@@ -553,10 +555,12 @@
     // Intercept dataLayer.push()
     var originalPush = window.dataLayer.push;
     window.dataLayer.push = function() {
+      console.log('[Beacon] dataLayer.push called with:', arguments);
       var result = originalPush.apply(window.dataLayer, arguments);
       
       // Check for GTM argument format: dataLayer.push('event', 'add_to_cart', {...})
       if (arguments.length >= 3 && arguments[0] === 'event' && typeof arguments[1] === 'string') {
+        console.log('[Beacon] Detected GTM format:', arguments[1]);
         var eventName = arguments[1];
         var eventData = arguments[2] || {};
         processEvent(eventName, eventData);
