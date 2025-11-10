@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 1.5.0
+ * Version: 1.6.0
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '1.5.0';
+  const VERSION = '1.6.0';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -434,7 +434,7 @@
 
   /**
    * Universal form tracking
-   * Tracks ALL form attempts, let dashboard analyze success vs error
+   * Tracks ALL form attempts, then detects if errors appeared
    */
   function setupFormTracking() {
     let lastFormSubmit = null;
@@ -453,31 +453,33 @@
           form_id: lastFormSubmit.form_id,
           form_name: lastFormSubmit.form_name
         });
+        
+        // After 500ms, check if error messages are visible
+        setTimeout(function() {
+          if (!lastFormSubmit) return;
+          
+          // Check for visible error elements
+          const errorElements = document.querySelectorAll('[class*="error"], [class*="alert"], [role="alert"]');
+          let errorFound = false;
+          
+          errorElements.forEach(function(el) {
+            if (el.offsetParent !== null) { // Is visible
+              const text = el.textContent.toLowerCase();
+              if (text.includes('required') || text.includes('error') || text.includes('invalid') || text.includes('must')) {
+                errorFound = true;
+                track('form_error', {
+                  form_id: lastFormSubmit.form_id,
+                  form_name: lastFormSubmit.form_name,
+                  error_message: el.textContent.substring(0, 200)
+                });
+              }
+            }
+          });
+          
+          lastFormSubmit = null;
+        }, 500);
       }
     }, true);
-    
-    // Watch for error messages appearing
-    const observer = new MutationObserver(function(mutations) {
-      if (!lastFormSubmit || Date.now() - lastFormSubmit.timestamp > 3000) return;
-      
-      mutations.forEach(function(mutation) {
-        mutation.addedNodes.forEach(function(node) {
-          if (node.nodeType === 1 && node.offsetParent !== null) {
-            const text = node.textContent.toLowerCase();
-            if (text.includes('error') || text.includes('required') || text.includes('invalid')) {
-              track('form_error', {
-                form_id: lastFormSubmit.form_id,
-                form_name: lastFormSubmit.form_name,
-                error_message: node.textContent.substring(0, 200)
-              });
-              lastFormSubmit = null;
-            }
-          }
-        });
-      });
-    });
-    
-    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   /**
