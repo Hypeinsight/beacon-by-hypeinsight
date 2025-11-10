@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 2.3.2
+ * Version: 2.3.3
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '2.3.2';
+  const VERSION = '2.3.3';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -187,7 +187,7 @@
       siteId: siteId,
       clientId: clientId,
       sessionId: sessionId,
-      timestamp: Date.now(),
+      timestamp: new Date().toISOString(), // ISO8601 format
       scriptVersion: VERSION,
       is_first_visit: isFirstVisit,
       session_number: sessionNumber,
