@@ -77,6 +77,42 @@ export default function VisitorDetail() {
     }
   };
 
+  const classifyTrafficSource = (utmSource, utmMedium, referrer, referrerHostname) => {
+    // Paid campaigns (UTM with cpc, paid, or ad campaign)
+    if (utmMedium && ['cpc', 'ppc', 'paid', 'paidsearch'].includes(utmMedium.toLowerCase())) {
+      return { type: 'Paid Search', detail: utmSource || 'Unknown' };
+    }
+    if (utmMedium && ['display', 'banner', 'cpm'].includes(utmMedium.toLowerCase())) {
+      return { type: 'Display Ads', detail: utmSource || 'Unknown' };
+    }
+    if (utmMedium && ['social', 'social-paid'].includes(utmMedium.toLowerCase())) {
+      return { type: 'Paid Social', detail: utmSource || 'Unknown' };
+    }
+    
+    // Organic with UTM (campaigns)
+    if (utmSource && !utmMedium) {
+      return { type: 'Campaign', detail: utmSource };
+    }
+    if (utmMedium && utmMedium.toLowerCase() === 'organic') {
+      return { type: 'Organic Search', detail: utmSource || 'Unknown' };
+    }
+    if (utmMedium && ['email', 'newsletter'].includes(utmMedium.toLowerCase())) {
+      return { type: 'Email', detail: utmSource || 'Unknown' };
+    }
+    
+    // Referral traffic
+    if (referrer && referrerHostname) {
+      const searchEngines = ['google', 'bing', 'yahoo', 'duckduckgo', 'baidu'];
+      if (searchEngines.some(engine => referrerHostname.includes(engine))) {
+        return { type: 'Organic Search', detail: referrerHostname };
+      }
+      return { type: 'Referral', detail: referrerHostname };
+    }
+    
+    // Direct traffic (no referrer, no UTMs)
+    return { type: 'Direct', detail: 'Type-in or bookmark' };
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-64">
       <div className="text-gray-500">Loading visitor data...</div>
@@ -180,85 +216,65 @@ export default function VisitorDetail() {
             <ExternalLink className="w-4 h-4 mr-2" />
             Traffic Source
           </div>
-          <p className="font-medium text-gray-900">
-            {visitor.utmSource || (visitor.referrer ? 'Referral' : 'Direct')}
-          </p>
-          {visitor.utmMedium && (
-            <p className="text-xs" style={{ color: '#00A9BA' }}>{visitor.utmMedium}</p>
-          )}
-          {visitor.utmCampaign && (
-            <p className="text-xs text-gray-500">{visitor.utmCampaign}</p>
-          )}
+          {(() => {
+            const source = classifyTrafficSource(visitor.utmSource, visitor.utmMedium, visitor.referrer, visitor.properties?.referrer_hostname);
+            return (
+              <>
+                <p className="font-medium text-gray-900">{source.type}</p>
+                <p className="text-xs text-gray-500">{source.detail}</p>
+              </>
+            );
+          })()}
         </div>
       </div>
 
       {/* Attribution Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* First Touch Attribution */}
-        {(visitor.firstUtmSource || visitor.firstReferrer) && (
-          <div className="bg-white p-6 rounded-lg border-2" style={{ borderColor: '#46B646' }}>
-            <div className="flex items-center mb-3">
-              <ExternalLink className="w-5 h-5 mr-2" style={{ color: '#46B646' }} />
-              <h3 className="text-lg font-semibold text-gray-900">Original Source</h3>
-            </div>
-            <p className="text-xs text-gray-500 mb-3">How they first found you</p>
-            <div className="flex flex-wrap gap-2">
-              {visitor.firstUtmSource && (
-                <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#46B64620', color: '#46B646' }}>
-                  Source: {visitor.firstUtmSource}
-                </span>
-              )}
-              {visitor.firstUtmMedium && (
-                <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#00A9BA20', color: '#00A9BA' }}>
-                  Medium: {visitor.firstUtmMedium}
-                </span>
-              )}
+        {(visitor.firstUtmSource || visitor.firstReferrer) && (() => {
+          const source = classifyTrafficSource(visitor.firstUtmSource, visitor.firstUtmMedium, visitor.firstReferrer, visitor.firstReferrerHostname);
+          return (
+            <div className="bg-white p-6 rounded-lg border-2" style={{ borderColor: '#46B646' }}>
+              <div className="flex items-center mb-3">
+                <ExternalLink className="w-5 h-5 mr-2" style={{ color: '#46B646' }} />
+                <h3 className="text-lg font-semibold text-gray-900">Original Source</h3>
+              </div>
+              <p className="text-xs text-gray-500 mb-3">How they first found you</p>
+              <div className="mb-3">
+                <p className="text-2xl font-bold" style={{ color: '#46B646' }}>{source.type}</p>
+                <p className="text-sm text-gray-600">{source.detail}</p>
+              </div>
               {visitor.firstUtmCampaign && (
-                <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#FFCB2B20', color: '#FFCB2B' }}>
-                  Campaign: {visitor.firstUtmCampaign}
-                </span>
+                <p className="text-sm text-gray-600">
+                  <strong>Campaign:</strong> {visitor.firstUtmCampaign}
+                </p>
               )}
             </div>
-            {visitor.firstReferrer && (
-              <p className="text-sm text-gray-600 mt-3">
-                🔗 <strong>Referrer:</strong> {visitor.firstReferrer}
-              </p>
-            )}
-          </div>
-        )}
+          );
+        })()}
         
         {/* Last Touch Attribution */}
-        {(visitor.utmSource || visitor.utmMedium || visitor.utmCampaign || visitor.referrer) && (
-          <div className="bg-white p-6 rounded-lg border-2" style={{ borderColor: '#FFCB2B' }}>
-            <div className="flex items-center mb-3">
-              <ExternalLink className="w-5 h-5 mr-2" style={{ color: '#FFCB2B' }} />
-              <h3 className="text-lg font-semibold text-gray-900">Current Source</h3>
-            </div>
-            <p className="text-xs text-gray-500 mb-3">Most recent visit source</p>
-            <div className="flex flex-wrap gap-2">
-              {visitor.utmSource && (
-                <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#46B64620', color: '#46B646' }}>
-                  Source: {visitor.utmSource}
-                </span>
-              )}
-              {visitor.utmMedium && (
-                <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#00A9BA20', color: '#00A9BA' }}>
-                  Medium: {visitor.utmMedium}
-                </span>
-              )}
+        {(visitor.utmSource || visitor.utmMedium || visitor.utmCampaign || visitor.referrer) && (() => {
+          const source = classifyTrafficSource(visitor.utmSource, visitor.utmMedium, visitor.referrer, visitor.properties?.referrer_hostname);
+          return (
+            <div className="bg-white p-6 rounded-lg border-2" style={{ borderColor: '#FFCB2B' }}>
+              <div className="flex items-center mb-3">
+                <ExternalLink className="w-5 h-5 mr-2" style={{ color: '#FFCB2B' }} />
+                <h3 className="text-lg font-semibold text-gray-900">Current Source</h3>
+              </div>
+              <p className="text-xs text-gray-500 mb-3">Most recent visit source</p>
+              <div className="mb-3">
+                <p className="text-2xl font-bold" style={{ color: '#FFCB2B' }}>{source.type}</p>
+                <p className="text-sm text-gray-600">{source.detail}</p>
+              </div>
               {visitor.utmCampaign && (
-                <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#FFCB2B20', color: '#FFCB2B' }}>
-                  Campaign: {visitor.utmCampaign}
-                </span>
+                <p className="text-sm text-gray-600">
+                  <strong>Campaign:</strong> {visitor.utmCampaign}
+                </p>
               )}
             </div>
-            {visitor.referrer && (
-              <p className="text-sm text-gray-600 mt-3">
-                🔗 <strong>Referrer:</strong> {visitor.referrer}
-              </p>
-            )}
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* Session Timeline */}
