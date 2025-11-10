@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 2.2.0
+ * Version: 2.3.0
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '2.2.0';
+  const VERSION = '2.3.0';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -514,42 +514,15 @@
     // Helper to process a single event
     function processEvent(eventName, eventData) {
       console.log('[Beacon] dataLayer event detected:', eventName, eventData);
-      switch(eventName) {
-        case 'add_to_cart':
-        case 'dl_add_to_cart':
-        case 'addToCart':
-          console.log('[Beacon] Tracking add_to_cart');
-          trackEcommerce('add_to_cart', eventData.ecommerce || eventData);
-          break;
-        
-        case 'view_item':
-        case 'dl_view_item':
-        case 'productView':
-          trackEcommerce('product_view', eventData.ecommerce || eventData);
-          break;
-        
-        case 'begin_checkout':
-        case 'dl_begin_checkout':
-        case 'checkout':
-          trackEcommerce('begin_checkout', eventData.ecommerce || eventData);
-          break;
-        
-        case 'purchase':
-        case 'dl_purchase':
-        case 'transaction':
-          trackEcommerce('purchase', eventData.ecommerce || eventData);
-          break;
-        
-        case 'remove_from_cart':
-        case 'dl_remove_from_cart':
-          trackEcommerce('remove_from_cart', eventData.ecommerce || eventData);
-          break;
-        
-        case 'view_cart':
-        case 'dl_view_cart':
-          trackEcommerce('view_cart', eventData.ecommerce || eventData);
-          break;
+      
+      // Ignore GTM internal events
+      if (eventName.startsWith('gtm.')) {
+        return;
       }
+      
+      // Track ALL events as custom events with the dataLayer data
+      console.log('[Beacon] Tracking dataLayer event:', eventName);
+      track('datalayer_' + eventName, eventData);
     }
     
     // Intercept dataLayer.push()
