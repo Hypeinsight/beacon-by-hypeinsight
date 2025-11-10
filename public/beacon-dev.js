@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 2.3.1
+ * Version: 2.3.2
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '2.3.1';
+  const VERSION = '2.3.2';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -233,18 +233,14 @@
    * Send event to server
    */
   function sendEvent(eventData) {
-    if (!navigator.sendBeacon) {
-      // Fallback to fetch
-      fetch(API_ENDPOINT + '/event', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(eventData),
-        keepalive: true,
-      }).catch(err => console.error('Beacon tracking error:', err));
-    } else {
-      const blob = new Blob([JSON.stringify(eventData)], { type: 'application/json' });
-      navigator.sendBeacon(API_ENDPOINT + '/event', blob);
-    }
+    // Always use fetch with keepalive instead of sendBeacon to avoid credentials issues
+    fetch(API_ENDPOINT + '/event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(eventData),
+      keepalive: true,
+      credentials: 'omit', // Don't send cookies to avoid CORS issues
+    }).catch(err => console.error('Beacon tracking error:', err));
   }
 
   /**
@@ -275,6 +271,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ events }),
       keepalive: true,
+      credentials: 'omit', // Don't send cookies to avoid CORS issues
     }).catch(err => console.error('Beacon batch error:', err));
   }
 
