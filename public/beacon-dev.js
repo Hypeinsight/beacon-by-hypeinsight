@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 1.7.0
+ * Version: 2.0.0
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '1.7.0';
+  const VERSION = '2.0.0';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -501,6 +501,78 @@
   }
 
   /**
+   * Set up dataLayer listener for e-commerce tracking
+   * Works with Google Tag Manager, Shopify, WooCommerce, etc.
+   */
+  function setupDataLayerTracking() {
+    // Create dataLayer if it doesn't exist
+    window.dataLayer = window.dataLayer || [];
+    
+    // Intercept dataLayer.push()
+    var originalPush = window.dataLayer.push;
+    window.dataLayer.push = function() {
+      var result = originalPush.apply(window.dataLayer, arguments);
+      
+      // Process each pushed event
+      for (var i = 0; i < arguments.length; i++) {
+        var event = arguments[i];
+        if (!event || typeof event !== 'object') continue;
+        
+        // Map dataLayer events to Beacon e-commerce events
+        if (event.event) {
+          switch(event.event) {
+            case 'add_to_cart':
+            case 'dl_add_to_cart':
+            case 'addToCart':
+              trackEcommerce('add_to_cart', event.ecommerce || event);
+              break;
+            
+            case 'view_item':
+            case 'dl_view_item':
+            case 'productView':
+              trackEcommerce('product_view', event.ecommerce || event);
+              break;
+            
+            case 'begin_checkout':
+            case 'dl_begin_checkout':
+            case 'checkout':
+              trackEcommerce('begin_checkout', event.ecommerce || event);
+              break;
+            
+            case 'purchase':
+            case 'dl_purchase':
+            case 'transaction':
+              trackEcommerce('purchase', event.ecommerce || event);
+              break;
+            
+            case 'remove_from_cart':
+            case 'dl_remove_from_cart':
+              trackEcommerce('remove_from_cart', event.ecommerce || event);
+              break;
+            
+            case 'view_cart':
+            case 'dl_view_cart':
+              trackEcommerce('view_cart', event.ecommerce || event);
+              break;
+          }
+        }
+      }
+      
+      return result;
+    };
+    
+    // Process any events already in dataLayer before we loaded
+    if (window.dataLayer.length > 0) {
+      window.dataLayer.forEach(function(event) {
+        if (event && event.event && event.ecommerce) {
+          // Re-push to trigger our interceptor
+          window.dataLayer.push(event);
+        }
+      });
+    }
+  }
+
+  /**
    * Initialize tracking
    */
   function init(id, options = {}) {
@@ -522,6 +594,9 @@
     
     // Set up universal form tracking
     setupFormTracking();
+    
+    // Set up dataLayer tracking
+    setupDataLayerTracking();
 
     // Update activity on user interaction
     ['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(event => {
