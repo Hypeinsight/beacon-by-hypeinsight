@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 1.1.0
+ * Version: 1.2.0
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '1.1.0';
+  const VERSION = '1.2.0';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -322,18 +322,32 @@
       return; // Don't track invalid form submissions
     }
     
-    // Track after a short delay to ensure the submission wasn't prevented
-    // This catches preventDefault() calls from custom validation
+    // For custom validation: only track if the submit wasn't prevented
+    // We check after 100ms to see if an error message appeared
     setTimeout(() => {
-      // Only track if form wasn't cancelled
-      if (!event.defaultPrevented) {
+      // If default was prevented or an error banner is visible, it's an error
+      if (event.defaultPrevented) {
+        return; // Form submission was blocked
+      }
+      
+      // Check if error messages are visible (common pattern)
+      const errorBanners = document.querySelectorAll('[class*="error"], [class*="alert"]');
+      let hasVisibleError = false;
+      errorBanners.forEach(el => {
+        if (el.offsetParent !== null && el.textContent.includes('required')) {
+          hasVisibleError = true;
+        }
+      });
+      
+      if (!hasVisibleError) {
+        // No errors detected, track successful submit
         track('form_submit', {
           form_id: form.id || null,
           form_name: form.name || null,
           form_action: form.action || null,
         });
       }
-    }, 10);
+    }, 100);
   }
 
   /**
