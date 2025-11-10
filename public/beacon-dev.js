@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 1.4.0
+ * Version: 1.5.0
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '1.4.0';
+  const VERSION = '1.5.0';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -112,29 +112,93 @@
   }
 
   /**
-   * Get UTM parameters from URL or sessionStorage
+   * Get UTM parameters and track first/last touch attribution
    */
-  function getUTMParams() {
+  function getAttributionData() {
     const params = new URLSearchParams(window.location.search);
-    const utm = {
-      utm_source: params.get('utm_source') || sessionStorage.getItem(STORAGE_PREFIX + 'utm_source'),
-      utm_medium: params.get('utm_medium') || sessionStorage.getItem(STORAGE_PREFIX + 'utm_medium'),
-      utm_campaign: params.get('utm_campaign') || sessionStorage.getItem(STORAGE_PREFIX + 'utm_campaign'),
-      utm_term: params.get('utm_term') || sessionStorage.getItem(STORAGE_PREFIX + 'utm_term'),
-      utm_content: params.get('utm_content') || sessionStorage.getItem(STORAGE_PREFIX + 'utm_content'),
-      gclid: params.get('gclid') || sessionStorage.getItem(STORAGE_PREFIX + 'gclid'),
-      fbclid: params.get('fbclid') || sessionStorage.getItem(STORAGE_PREFIX + 'fbclid'),
-      ttclid: params.get('ttclid') || sessionStorage.getItem(STORAGE_PREFIX + 'ttclid'),
+    const referrer = document.referrer;
+    
+    // Current source data
+    const currentSource = {
+      utm_source: params.get('utm_source'),
+      utm_medium: params.get('utm_medium'),
+      utm_campaign: params.get('utm_campaign'),
+      utm_term: params.get('utm_term'),
+      utm_content: params.get('utm_content'),
+      gclid: params.get('gclid'),
+      fbclid: params.get('fbclid'),
+      ttclid: params.get('ttclid'),
+      referrer: referrer || null,
+      referrer_hostname: referrer ? new URL(referrer).hostname : null,
     };
+    
+    // Check if this is a new source (has UTMs or external referrer)
+    const hasNewSource = currentSource.utm_source || currentSource.gclid || currentSource.fbclid || 
+      (currentSource.referrer && currentSource.referrer_hostname !== window.location.hostname);
+    
+    // FIRST TOUCH: Store forever in localStorage (never changes)
+    const firstTouchKey = STORAGE_PREFIX + 'first_touch';
+    let firstTouch = localStorage.getItem(firstTouchKey);
+    if (!firstTouch && hasNewSource) {
+      firstTouch = JSON.stringify(currentSource);
+      localStorage.setItem(firstTouchKey, firstTouch);
+    }
+    
+    // LAST TOUCH: Store in sessionStorage (updates each session)
+    const lastTouchKey = STORAGE_PREFIX + 'last_touch';
+    if (hasNewSource) {
+      sessionStorage.setItem(lastTouchKey, JSON.stringify(currentSource));
+    }
+    
+    // Parse stored attributions
+    const firstTouchData = firstTouch ? JSON.parse(firstTouch) : {};
+    const lastTouchData = sessionStorage.getItem(lastTouchKey) ? JSON.parse(sessionStorage.getItem(lastTouchKey)) : currentSource;
+    
+    return {
+      // Last touch (current session source)
+      utm_source: lastTouchData.utm_source,
+      utm_medium: lastTouchData.utm_medium,
+      utm_campaign: lastTouchData.utm_campaign,
+      utm_term: lastTouchData.utm_term,
+      utm_content: lastTouchData.utm_content,
+      gclid: lastTouchData.gclid,
+      fbclid: lastTouchData.fbclid,
+      ttclid: lastTouchData.ttclid,
+      
+      // First touch (original source)
+      first_utm_source: firstTouchData.utm_source,
+      first_utm_medium: firstTouchData.utm_medium,
+      first_utm_campaign: firstTouchData.utm_campaign,
+      first_referrer: firstTouchData.referrer,
+      first_referrer_hostname: firstTouchData.referrer_hostname,
+    };
+  }
 
-    // Persist UTM params in session
-    Object.keys(utm).forEach(key => {
-      if (utm[key]) {
-        sessionStorage.setItem(STORAGE_PREFIX + key, utm[key]);
-      }
-    });
+  /**
+   * Build base event data
+   */
+  function buildEventData(eventName, properties = {}) {
+    const attribution = getAttributionData();
+    const device = getDeviceData();
+    const page = getPageData();
 
-    return utm;
+    return {
+      event: eventName,
+      siteId: siteId,
+      clientId: clientId,
+      sessionId: sessionId,
+      timestamp: Date.now(),
+      scriptVersion: VERSION,
+      is_first_visit: isFirstVisit,
+      session_number: sessionNumber,
+      page_view_number: pageViewNumber,
+      properties: {
+        ...device,
+        ...page,
+        ...attribution,
+        ...properties,
+      },
+    };
   }
 
   /**
@@ -164,32 +228,6 @@
     };
   }
 
-  /**
-   * Build base event data
-   */
-  function buildEventData(eventName, properties = {}) {
-    const utm = getUTMParams();
-    const device = getDeviceData();
-    const page = getPageData();
-
-    return {
-      event: eventName,
-      siteId: siteId,
-      clientId: clientId,
-      sessionId: sessionId,
-      timestamp: Date.now(),
-      scriptVersion: VERSION,
-      is_first_visit: isFirstVisit,
-      session_number: sessionNumber,
-      page_view_number: pageViewNumber,
-      properties: {
-        ...device,
-        ...page,
-        ...utm,
-        ...properties,
-      },
-    };
-  }
 
   /**
    * Send event to server
@@ -395,57 +433,51 @@
   }
 
   /**
-   * Universal form tracking - works with any form system
-   * Strategy: Mark form attempts in localStorage, track success on thank-you pages
+   * Universal form tracking
+   * Tracks ALL form attempts, let dashboard analyze success vs error
    */
   function setupFormTracking() {
-    // 1. Detect form submissions and mark them
+    let lastFormSubmit = null;
+    
+    // Track every form submission
     document.addEventListener('submit', function(e) {
       const form = e.target;
       if (form.tagName === 'FORM') {
-        // Store that a form was just submitted
-        localStorage.setItem(STORAGE_PREFIX + 'form_submitted', JSON.stringify({
+        lastFormSubmit = {
           form_id: form.id || null,
-          form_action: form.action || window.location.href,
+          form_name: form.name || null,
           timestamp: Date.now()
-        }));
+        };
+        
+        track('form_submit', {
+          form_id: lastFormSubmit.form_id,
+          form_name: lastFormSubmit.form_name
+        });
       }
     }, true);
     
-    // 2. Check if we just came from a form submission
-    const recentSubmit = localStorage.getItem(STORAGE_PREFIX + 'form_submitted');
-    if (recentSubmit) {
-      try {
-        const submitData = JSON.parse(recentSubmit);
-        const timeSinceSubmit = Date.now() - submitData.timestamp;
-        
-        // If submission was within last 10 seconds, this might be a success page
-        if (timeSinceSubmit < 10000) {
-          // Check for success indicators in URL or page
-          const url = window.location.href.toLowerCase();
-          const hasSuccessIndicator = 
-            url.includes('thank') ||
-            url.includes('success') ||
-            url.includes('confirmation') ||
-            url.includes('complete') ||
-            document.body.textContent.toLowerCase().includes('thank you');
-          
-          if (hasSuccessIndicator) {
-            // This looks like a success page!
-            track('form_submit', {
-              form_id: submitData.form_id,
-              success_page: window.location.pathname,
-              detection_method: 'url_pattern'
-            });
+    // Watch for error messages appearing
+    const observer = new MutationObserver(function(mutations) {
+      if (!lastFormSubmit || Date.now() - lastFormSubmit.timestamp > 3000) return;
+      
+      mutations.forEach(function(mutation) {
+        mutation.addedNodes.forEach(function(node) {
+          if (node.nodeType === 1 && node.offsetParent !== null) {
+            const text = node.textContent.toLowerCase();
+            if (text.includes('error') || text.includes('required') || text.includes('invalid')) {
+              track('form_error', {
+                form_id: lastFormSubmit.form_id,
+                form_name: lastFormSubmit.form_name,
+                error_message: node.textContent.substring(0, 200)
+              });
+              lastFormSubmit = null;
+            }
           }
-        }
-        
-        // Clear the submission marker
-        localStorage.removeItem(STORAGE_PREFIX + 'form_submitted');
-      } catch (e) {
-        localStorage.removeItem(STORAGE_PREFIX + 'form_submitted');
-      }
-    }
+        });
+      });
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   /**
