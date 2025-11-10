@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 2.3.0
+ * Version: 2.3.1
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '2.3.0';
+  const VERSION = '2.3.1';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -522,7 +522,16 @@
       
       // Track ALL events as custom events with the dataLayer data
       console.log('[Beacon] Tracking dataLayer event:', eventName);
-      track('datalayer_' + eventName, eventData);
+      
+      // Send immediately (don't queue) to prevent loss on form redirects
+      if (!initialized) {
+        console.warn('Beacon not initialized. Call beacon("init", "SITE_ID") first.');
+        return;
+      }
+      
+      const eventDataToSend = buildEventData('datalayer_' + eventName, eventData);
+      sendEvent(eventDataToSend); // Send immediately, don't queue
+      updateSessionActivity();
     }
     
     // Intercept dataLayer.push()
