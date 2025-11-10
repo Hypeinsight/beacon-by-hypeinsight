@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 2.3.3
+ * Version: 2.4.0
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '2.3.3';
+  const VERSION = '2.4.0';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -574,10 +574,11 @@
     
     // Process any events already in dataLayer before we loaded
     if (window.dataLayer.length > 0) {
+      console.log('[Beacon] Processing', window.dataLayer.length, 'existing dataLayer events');
       window.dataLayer.forEach(function(event) {
-        if (event && event.event && event.ecommerce) {
-          // Re-push to trigger our interceptor
-          window.dataLayer.push(event);
+        if (event && typeof event === 'object' && event.event) {
+          // Process all events, not just e-commerce ones
+          processEvent(event.event, event);
         }
       });
     }
@@ -603,11 +604,11 @@
     window.addEventListener('beforeunload', trackUnload);
     window.addEventListener('pagehide', trackUnload);
     
-    // Set up universal form tracking
-    setupFormTracking();
-    
-    // Set up dataLayer tracking
+    // Set up dataLayer tracking first
     setupDataLayerTracking();
+    
+    // Disable built-in form tracking - rely on dataLayer events instead
+    // setupFormTracking();
 
     // Update activity on user interaction
     ['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(event => {
