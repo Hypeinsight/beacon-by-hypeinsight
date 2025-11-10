@@ -1,7 +1,7 @@
 /**
  * Beacon Tracking Script - Development Version
  * By Hype Insight
- * Version: 1.6.0
+ * Version: 1.7.0
  *
  * This script collects user behavior data and sends it to the Beacon tracking server.
  * All data is collected server-side to bypass browser privacy restrictions.
@@ -21,7 +21,7 @@
   'use strict';
 
   // Configuration
-  const VERSION = '1.6.0';
+  const VERSION = '1.7.0';
   const API_ENDPOINT = window.beaconConfig?.endpoint || 'http://localhost:3000/api/track';
   const BATCH_ENDPOINT = window.beaconConfig?.batchEndpoint || 'http://localhost:3000/api/track/batch';
   const BATCH_SIZE = 10;
@@ -434,12 +434,12 @@
 
   /**
    * Universal form tracking
-   * Tracks ALL form attempts, then detects if errors appeared
+   * Only tracks successful submits - tracks error if error message appears
    */
   function setupFormTracking() {
     let lastFormSubmit = null;
     
-    // Track every form submission
+    // Detect form submission attempts
     document.addEventListener('submit', function(e) {
       const form = e.target;
       if (form.tagName === 'FORM') {
@@ -448,11 +448,6 @@
           form_name: form.name || null,
           timestamp: Date.now()
         };
-        
-        track('form_submit', {
-          form_id: lastFormSubmit.form_id,
-          form_name: lastFormSubmit.form_name
-        });
         
         // After 500ms, check if error messages are visible
         setTimeout(function() {
@@ -466,15 +461,25 @@
             if (el.offsetParent !== null) { // Is visible
               const text = el.textContent.toLowerCase();
               if (text.includes('required') || text.includes('error') || text.includes('invalid') || text.includes('must')) {
-                errorFound = true;
-                track('form_error', {
-                  form_id: lastFormSubmit.form_id,
-                  form_name: lastFormSubmit.form_name,
-                  error_message: el.textContent.substring(0, 200)
-                });
+                if (!errorFound) { // Only track first error found
+                  errorFound = true;
+                  track('form_error', {
+                    form_id: lastFormSubmit.form_id,
+                    form_name: lastFormSubmit.form_name,
+                    error_message: el.textContent.substring(0, 200)
+                  });
+                }
               }
             }
           });
+          
+          // If no error found, track successful submit
+          if (!errorFound) {
+            track('form_submit', {
+              form_id: lastFormSubmit.form_id,
+              form_name: lastFormSubmit.form_name
+            });
+          }
           
           lastFormSubmit = null;
         }, 500);
