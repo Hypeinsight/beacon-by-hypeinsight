@@ -6,16 +6,22 @@ export default function Setup() {
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   const scriptSnippet = `<script>
-  (function() {
-    window.beaconConfig = {
-      apiEndpoint: '${API_URL}',
-      debug: false
-    };
-    var script = document.createElement('script');
-    script.src = window.beaconConfig.apiEndpoint + '/beacon.js';
-    script.async = true;
-    document.head.appendChild(script);
-  })();
+(function() {
+  window.beaconConfig = {
+    endpoint: '${API_URL}/api/track',
+    batchEndpoint: '${API_URL}/api/track/batch'
+  };
+  
+  var script = document.createElement('script');
+  script.src = '${API_URL}/beacon-dev.js?v=2.4.0&t=' + Date.now();
+  script.async = true;
+  script.onload = function() {
+    if (window.beacon) {
+      beacon('init', 'YOUR_SITE_ID');
+    }
+  };
+  document.head.appendChild(script);
+})();
 </script>`;
 
   const copyToClipboard = () => {
@@ -152,22 +158,18 @@ export default function Setup() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Test First */}
-          <div className="bg-white rounded-lg shadow-md border-2 p-6" style={{ borderColor: '#FFCB2B' }}>
+          {/* DataLayer Events */}
+          <div className="bg-white rounded-lg shadow-md border-2 p-6" style={{ borderColor: '#00A9BA' }}>
             <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-              <ExternalLink className="w-5 h-5 mr-2" style={{ color: '#FFCB2B' }} />
-              Test First
+              <ExternalLink className="w-5 h-5 mr-2" style={{ color: '#00A9BA' }} />
+              DataLayer Tracking
             </h3>
             <p className="text-sm text-gray-700 mb-4">
-              Want to test tracking before installing? Try our test page to send a sample event with UTM parameters.
+              Beacon automatically captures ALL dataLayer events from Google Tag Manager, Shopify, and other platforms. No additional configuration needed!
             </p>
-            <a
-              href="/test"
-              className="block w-full py-2 text-center text-white font-medium rounded-lg transition-colors"
-              style={{ backgroundColor: '#FFCB2B' }}
-            >
-              Go to Test Page
-            </a>
+            <div className="text-xs text-gray-600">
+              <strong>Supported:</strong> E-commerce (add_to_cart, purchase), Form submissions, Custom events
+            </div>
           </div>
 
           {/* What Gets Tracked */}
@@ -187,8 +189,12 @@ export default function Setup() {
                 <span><strong>Scroll Depth:</strong> How far users scroll</span>
               </li>
               <li className="flex items-start">
+                <span className="mr-2">🛒</span>
+                <span><strong>E-commerce:</strong> Add to cart, purchases (via dataLayer)</span>
+              </li>
+              <li className="flex items-start">
                 <span className="mr-2">📝</span>
-                <span><strong>Form Submits:</strong> Lead generation events</span>
+                <span><strong>DataLayer Events:</strong> All GTM/custom events automatically</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2">🌍</span>
