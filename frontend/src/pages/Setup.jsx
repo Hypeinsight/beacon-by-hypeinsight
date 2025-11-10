@@ -194,7 +194,7 @@ export default function Setup() {
               </li>
               <li className="flex items-start">
                 <span className="mr-2">📝</span>
-                <span><strong>DataLayer Events:</strong> All GTM/custom events automatically</span>
+                <span><strong>DataLayer Events:</strong> Any custom events pushed to dataLayer</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2">🌍</span>
