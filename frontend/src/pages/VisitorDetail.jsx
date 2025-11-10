@@ -35,10 +35,16 @@ export default function VisitorDetail() {
           company: first.ip_company_name,
           sessionNumber: first.session_number || 1,
           isFirstVisit: first.is_first_visit || false,
-          utmSource: firstPageView.utm_source,
-          utmMedium: firstPageView.utm_medium,
-          utmCampaign: firstPageView.utm_campaign,
-          referrer: firstPageView.page_referrer,
+          // Last touch (current)
+          utmSource: firstPageView.properties?.utm_source,
+          utmMedium: firstPageView.properties?.utm_medium,
+          utmCampaign: firstPageView.properties?.utm_campaign,
+          referrer: firstPageView.properties?.page_referrer,
+          // First touch (original)
+          firstUtmSource: firstPageView.properties?.first_utm_source,
+          firstUtmMedium: firstPageView.properties?.first_utm_medium,
+          firstUtmCampaign: firstPageView.properties?.first_utm_campaign,
+          firstReferrer: firstPageView.properties?.first_referrer,
           events: visitorEvents.sort((a, b) => a.event_timestamp - b.event_timestamp)
         });
       }
@@ -186,37 +192,74 @@ export default function VisitorDetail() {
         </div>
       </div>
 
-      {/* Traffic Source Card */}
-      {(visitor.utmSource || visitor.utmMedium || visitor.utmCampaign || visitor.referrer) && (
-        <div className="bg-white p-6 rounded-lg border-2" style={{ borderColor: '#FFCB2B' }}>
-          <div className="flex items-center mb-3">
-            <ExternalLink className="w-5 h-5 mr-2" style={{ color: '#FFCB2B' }} />
-            <h3 className="text-lg font-semibold text-gray-900">Traffic Source</h3>
+      {/* Attribution Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* First Touch Attribution */}
+        {(visitor.firstUtmSource || visitor.firstReferrer) && (
+          <div className="bg-white p-6 rounded-lg border-2" style={{ borderColor: '#46B646' }}>
+            <div className="flex items-center mb-3">
+              <ExternalLink className="w-5 h-5 mr-2" style={{ color: '#46B646' }} />
+              <h3 className="text-lg font-semibold text-gray-900">Original Source</h3>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">How they first found you</p>
+            <div className="flex flex-wrap gap-2">
+              {visitor.firstUtmSource && (
+                <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#46B64620', color: '#46B646' }}>
+                  Source: {visitor.firstUtmSource}
+                </span>
+              )}
+              {visitor.firstUtmMedium && (
+                <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#00A9BA20', color: '#00A9BA' }}>
+                  Medium: {visitor.firstUtmMedium}
+                </span>
+              )}
+              {visitor.firstUtmCampaign && (
+                <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#FFCB2B20', color: '#FFCB2B' }}>
+                  Campaign: {visitor.firstUtmCampaign}
+                </span>
+              )}
+            </div>
+            {visitor.firstReferrer && (
+              <p className="text-sm text-gray-600 mt-3">
+                🔗 <strong>Referrer:</strong> {visitor.firstReferrer}
+              </p>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {visitor.utmSource && (
-              <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#46B64620', color: '#46B646' }}>
-                Source: {visitor.utmSource}
-              </span>
-            )}
-            {visitor.utmMedium && (
-              <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#00A9BA20', color: '#00A9BA' }}>
-                Medium: {visitor.utmMedium}
-              </span>
-            )}
-            {visitor.utmCampaign && (
-              <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#FFCB2B20', color: '#FFCB2B' }}>
-                Campaign: {visitor.utmCampaign}
-              </span>
+        )}
+        
+        {/* Last Touch Attribution */}
+        {(visitor.utmSource || visitor.utmMedium || visitor.utmCampaign || visitor.referrer) && (
+          <div className="bg-white p-6 rounded-lg border-2" style={{ borderColor: '#FFCB2B' }}>
+            <div className="flex items-center mb-3">
+              <ExternalLink className="w-5 h-5 mr-2" style={{ color: '#FFCB2B' }} />
+              <h3 className="text-lg font-semibold text-gray-900">Current Source</h3>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">Most recent visit source</p>
+            <div className="flex flex-wrap gap-2">
+              {visitor.utmSource && (
+                <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#46B64620', color: '#46B646' }}>
+                  Source: {visitor.utmSource}
+                </span>
+              )}
+              {visitor.utmMedium && (
+                <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#00A9BA20', color: '#00A9BA' }}>
+                  Medium: {visitor.utmMedium}
+                </span>
+              )}
+              {visitor.utmCampaign && (
+                <span className="px-3 py-1.5 text-sm font-medium rounded-lg" style={{ backgroundColor: '#FFCB2B20', color: '#FFCB2B' }}>
+                  Campaign: {visitor.utmCampaign}
+                </span>
+              )}
+            </div>
+            {visitor.referrer && (
+              <p className="text-sm text-gray-600 mt-3">
+                🔗 <strong>Referrer:</strong> {visitor.referrer}
+              </p>
             )}
           </div>
-          {visitor.referrer && (
-            <p className="text-sm text-gray-600 mt-3">
-              🔗 <strong>Referrer:</strong> {visitor.referrer}
-            </p>
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Session Timeline */}
       <div className="bg-white rounded-lg shadow-md border border-gray-200">
