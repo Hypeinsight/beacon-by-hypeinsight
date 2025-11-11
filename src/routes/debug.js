@@ -1,18 +1,57 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../config/database');
+const { verifyJWT } = require('../middleware/authMiddleware');
 
 /**
  * GET /api/debug/events
- * Returns aggregated event data for dashboard
+ * Returns aggregated event data for dashboard (filtered by user's agency)
+ * Requires: Authentication
  */
-router.get('/events', async (req, res) => {
+router.get('/events', verifyJWT, async (req, res) => {
   try {
-    // Get total count
-    const totalResult = await db.query('SELECT COUNT(*) as count FROM events');
+    const userId = req.user.id;
+    
+    // Get user's agency
+    const userResult = await db.query(
+      'SELECT agency_id FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    if (!userResult.rows.length) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    const agencyId = userResult.rows[0].agency_id;
+    
+    // Get sites for this agency
+    const sitesResult = await db.query(
+      'SELECT id FROM sites WHERE agency_id = $1 AND deleted_at IS NULL',
+      [agencyId]
+    );
+    
+    const siteIds = sitesResult.rows.map(s => s.id);
+    
+    if (siteIds.length === 0) {
+      // User has no sites, return empty stats
+      return res.json({
+        total: 0,
+        pageViews: 0,
+        clicks: 0,
+        forms: 0,
+        visitors: 0,
+        events: [],
+      });
+    }
+    
+    // Get total count for user's sites
+    const totalResult = await db.query(
+      'SELECT COUNT(*) as count FROM events WHERE site_id = ANY($1)',
+      [siteIds]
+    );
     const total = parseInt(totalResult.rows[0].count);
 
-    // Get counts by event type
+    // Get counts by event type for user's sites
     const statsResult = await db.query(`
       SELECT 
         COUNT(*) FILTER (WHERE event_name = 'page_view') as page_views,
@@ -20,9 +59,10 @@ router.get('/events', async (req, res) => {
         COUNT(*) FILTER (WHERE event_name = 'form_submit') as forms,
         COUNT(DISTINCT client_id) as visitors
       FROM events
-    `);
+      WHERE site_id = ANY($1)
+    `, [siteIds]);
 
-    // Get recent events (last 50)
+    // Get recent events (last 500) for user's sites
     const eventsResult = await db.query(`
       SELECT 
         event_name,
@@ -49,9 +89,10 @@ router.get('/events', async (req, res) => {
         properties->>'utm_campaign' as utm_campaign,
         properties->>'page_referrer' as page_referrer
       FROM events
+      WHERE site_id = ANY($1)
       ORDER BY server_timestamp DESC
       LIMIT 500
-    `);
+    `, [siteIds]);
 
     res.json({
       total,

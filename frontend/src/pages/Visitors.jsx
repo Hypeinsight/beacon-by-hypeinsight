@@ -15,7 +15,10 @@ export default function Visitors() {
   const loadVisitors = async () => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const response = await axios.get(`${API_URL}/api/debug/events`);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/debug/events`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const events = response.data.events || [];
       
       // Group events by client_id to create visitor profiles

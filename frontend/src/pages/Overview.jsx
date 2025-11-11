@@ -20,7 +20,10 @@ export default function Overview() {
   const loadData = async () => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const response = await axios.get(`${API_URL}/api/debug/events`);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/debug/events`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setStats({
         totalVisitors: response.data.visitors || 0,
         pageViews: response.data.pageViews || 0,
