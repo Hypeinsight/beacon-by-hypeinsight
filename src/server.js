@@ -19,6 +19,8 @@ const debugRoutes = require('./routes/debug');
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
+const companiesRoutes = require('./routes/companies');
+const analyticsRoutes = require('./routes/analytics');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -75,6 +77,8 @@ app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/companies', companiesRoutes);
+app.use('/api/analytics', analyticsRoutes);
 app.use('/api/track', trackingRoutes);
 app.use('/api/sites', sitesRoutes);
 app.use('/api/agencies', agenciesRoutes);
