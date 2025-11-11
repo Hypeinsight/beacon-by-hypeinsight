@@ -61,12 +61,7 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Serve static files (beacon.js tracking script) with CORS headers
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  next();
-});
+// Serve static files (beacon.js tracking script)
 app.use(express.static('public'));
 app.use('/tests', express.static('tests'));
 

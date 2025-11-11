@@ -32,6 +32,10 @@ const errorHandler = (err, req, res, next) => {
     message = err.message;
   }
 
+  // Ensure CORS headers are set even on error
+  res.setHeader('Access-Control-Allow-Origin', req.get('origin') || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
   res.status(statusCode).json({
     status: 'error',
     message,

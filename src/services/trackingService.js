@@ -211,28 +211,30 @@ const saveEvent = async (eventData) => {
  * @returns {Promise<Array<object>>} inserted rows (id, event_id)
  */
 const saveBatchEvents = async (events, ipAddress, userAgent) => {
-  const client = await db.connect();
-  try {
-    await client.query('BEGIN');
-    const results = [];
-    for (const ev of events) {
-      const e = await normalizeEvent({
-        ...ev,
-        ipAddress: ev.ipAddress || ipAddress,
-        userAgent: ev.userAgent || userAgent,
-      });
-      const { text, values } = buildInsertQuery(e);
-      const res = await client.query(text, values);
-      results.push(res.rows[0]);
+  return retryWithBackoff(async () => {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      const results = [];
+      for (const ev of events) {
+        const e = await normalizeEvent({
+          ...ev,
+          ipAddress: ev.ipAddress || ipAddress,
+          userAgent: ev.userAgent || userAgent,
+        });
+        const { text, values } = buildInsertQuery(e);
+        const res = await client.query(text, values);
+        results.push(res.rows[0]);
+      }
+      await client.query('COMMIT');
+      return results;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-    await client.query('COMMIT');
-    return results;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  }, 2, 50);
 };
 
 /**
