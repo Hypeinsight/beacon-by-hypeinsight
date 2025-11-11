@@ -1,9 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Copy, CheckCircle, Code, ExternalLink, Wrench } from 'lucide-react';
+import axios from 'axios';
 
 export default function Setup() {
   const [copied, setCopied] = useState(false);
+  const [sites, setSites] = useState([]);
+  const [selectedSiteId, setSelectedSiteId] = useState(null);
+  const [loading, setLoading] = useState(true);
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+  useEffect(() => {
+    loadSites();
+  }, []);
+
+  const loadSites = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/sites`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSites(response.data.data || []);
+      if (response.data.data && response.data.data.length > 0) {
+        setSelectedSiteId(response.data.data[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading sites:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectedSite = sites.find(s => s.id === selectedSiteId);
+  const siteId = selectedSite?.script_id || 'YOUR_SITE_ID';
 
   const scriptSnippet = `<script>
 (function() {
@@ -17,7 +45,7 @@ export default function Setup() {
   script.async = true;
   script.onload = function() {
     if (window.beacon) {
-      beacon('init', 'YOUR_SITE_ID');
+      beacon('init', '${siteId}');
     }
   };
   document.head.appendChild(script);
@@ -29,6 +57,10 @@ export default function Setup() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64"><div className="text-gray-500">Loading sites...</div></div>;
+  }
 
   return (
     <div className="space-y-8">
@@ -46,6 +78,26 @@ export default function Setup() {
           </div>
         </div>
       </div>
+
+      {/* Site Selector */}
+      {sites.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Site
+          </label>
+          <select
+            value={selectedSiteId || ''}
+            onChange={(e) => setSelectedSiteId(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            {sites.map(site => (
+              <option key={site.id} value={site.id}>
+                {site.name} ({site.domain})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Quick Start */}
       <div className="bg-gradient-to-br from-green-50 to-cyan-50 border-2 rounded-lg p-6" style={{ borderColor: '#46B646' }}>
