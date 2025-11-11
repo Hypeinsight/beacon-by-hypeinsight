@@ -53,7 +53,9 @@ export default function Register() {
       <div className="w-full max-w-md space-y-6 relative z-10">
         {/* Logo/Header */}
         <div className="text-center">
-          <img src="/beacon-logo.png" alt="Beacon Logo" className="h-40 mx-auto mb-6" />
+          <div className="flex justify-center mb-6">
+            <img src="/beacon-logo.png" alt="Beacon Logo" className="h-24 object-contain" />
+          </div>
           <h2 className="text-2xl font-bold text-white">Create your account</h2>
         </div>
 
