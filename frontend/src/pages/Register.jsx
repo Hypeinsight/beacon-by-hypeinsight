@@ -53,9 +53,7 @@ export default function Register() {
       <div className="w-full max-w-md space-y-6 relative z-10">
         {/* Logo/Header */}
         <div className="text-center">
-          <div className="bg-gradient-to-b from-slate-800/50 to-slate-900/70 rounded-lg p-6 mb-6 border border-cyan-500/20">
-            <img src="/beacon-logo.png" alt="Beacon Logo" className="h-32 mx-auto" />
-          </div>
+          <img src="/beacon-logo.png" alt="Beacon Logo" className="h-40 mx-auto mb-6" />
           <h2 className="text-2xl font-bold text-white">Create your account</h2>
         </div>
 
