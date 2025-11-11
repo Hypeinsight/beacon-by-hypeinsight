@@ -36,13 +36,29 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// CORS configuration - allow credentials from any origin
+// CORS configuration
+const allowedOrigins = [
+  'https://beacon-dashboard.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:5173',
+];
+
 app.use(cors({
-  origin: true, // Reflects the request origin (not wildcard)
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all for now
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Rate limiting
 const limiter = rateLimit({
