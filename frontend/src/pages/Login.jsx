@@ -39,8 +39,10 @@ export default function Login() {
       <div className="w-full max-w-md space-y-8 relative z-10">
         {/* Logo/Header */}
         <div className="text-center">
-          <img src="/beacon-logo.png" alt="Beacon Logo" className="h-32 mx-auto mb-6" />
-          <h2 className="mt-4 text-2xl font-bold text-white">Sign in to your account</h2>
+          <div className="bg-gradient-to-b from-slate-800/50 to-slate-900/70 rounded-lg p-6 mb-6 border border-cyan-500/20">
+            <img src="/beacon-logo.png" alt="Beacon Logo" className="h-32 mx-auto" />
+          </div>
+          <h2 className="text-2xl font-bold text-white">Sign in to your account</h2>
         </div>
 
         {/* Error Message */}
