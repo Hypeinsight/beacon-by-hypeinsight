@@ -32,7 +32,7 @@ export default function Register() {
     try {
       const result = await register(email, password, name);
       if (result.success) {
-        navigate('/overview');
+        navigate('/onboarding');
       } else {
         setError(result.error);
       }

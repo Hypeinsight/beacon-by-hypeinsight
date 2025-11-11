@@ -18,7 +18,26 @@ export default function Login() {
     try {
       const result = await login(email, password);
       if (result.success) {
-        navigate('/overview');
+        // Check if user has any sites
+        const token = localStorage.getItem('token');
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        
+        try {
+          const sitesResponse = await fetch(`${API_URL}/api/sites`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const sitesData = await sitesResponse.json();
+          
+          // If no sites, go to onboarding; otherwise go to overview
+          if (sitesData.data && sitesData.data.length === 0) {
+            navigate('/onboarding');
+          } else {
+            navigate('/overview');
+          }
+        } catch (err) {
+          // Default to overview if check fails
+          navigate('/overview');
+        }
       } else {
         setError(result.error);
       }
