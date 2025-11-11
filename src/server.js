@@ -16,6 +16,9 @@ const healthRoutes = require('./routes/health');
 const sitesRoutes = require('./routes/sites');
 const agenciesRoutes = require('./routes/agencies');
 const debugRoutes = require('./routes/debug');
+const authRoutes = require('./routes/auth');
+const usersRoutes = require('./routes/users');
+const adminRoutes = require('./routes/admin');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -48,6 +51,8 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Body parsing middleware
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
@@ -67,6 +72,9 @@ app.use('/tests', express.static('tests'));
 
 // Routes
 app.use('/api/health', healthRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/track', trackingRoutes);
 app.use('/api/sites', sitesRoutes);
 app.use('/api/agencies', agenciesRoutes);
