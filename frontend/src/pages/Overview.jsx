@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Users, Building2, TrendingUp, Clock, MousePointer, FileText, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Building2, TrendingUp, Clock, MousePointer, FileText, ExternalLink, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 
 export default function Overview() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalVisitors: 0,
     pageViews: 0,
@@ -12,10 +14,33 @@ export default function Overview() {
   const [topPages, setTopPages] = useState([]);
   const [topCompanies, setTopCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasConnectedSites, setHasConnectedSites] = useState(true);
 
   useEffect(() => {
+    checkConnectedSites();
     loadData();
   }, []);
+
+  const checkConnectedSites = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/sites`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      const sites = response.data.data || [];
+      const connectedSites = sites.filter(s => s.is_connected);
+      
+      if (connectedSites.length === 0) {
+        setHasConnectedSites(false);
+        return;
+      }
+      setHasConnectedSites(true);
+    } catch (error) {
+      console.error('Error checking connected sites:', error);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -76,6 +101,30 @@ export default function Overview() {
     return <div className="flex items-center justify-center h-64">
       <div className="text-gray-500">Loading analytics...</div>
     </div>;
+  }
+
+  if (!hasConnectedSites) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-6 rounded">
+          <div className="flex items-start">
+            <AlertCircle className="w-6 h-6 text-amber-600 mr-4 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-lg font-semibold text-amber-900 mb-2">No Sites Connected Yet</h3>
+              <p className="text-amber-800 mb-4">
+                To start seeing visitor data, you need to install the Beacon tracking script on your website.
+              </p>
+              <button
+                onClick={() => navigate('/setup')}
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium transition"
+              >
+                Go to Setup & Installation
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

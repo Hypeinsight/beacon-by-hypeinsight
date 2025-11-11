@@ -92,10 +92,27 @@ export default function Setup() {
           >
             {sites.map(site => (
               <option key={site.id} value={site.id}>
-                {site.name} ({site.domain})
+                {site.name} ({site.domain}) {site.is_connected ? '✓ Connected' : '⏳ Waiting for data'}
               </option>
             ))}
           </select>
+          <div className="mt-3 flex gap-4 flex-wrap">
+            {sites.map(site => (
+              <div key={site.id} className="flex items-center gap-2">
+                {site.is_connected ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span className="text-xs text-green-700 font-medium">{site.name}: Connected</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span className="text-xs text-amber-700 font-medium">{site.name}: Waiting</span>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

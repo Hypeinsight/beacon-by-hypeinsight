@@ -191,6 +191,7 @@ async function normalizeEvent(input) {
 
 /**
  * Save a single event to the database with enrichment and mapping.
+ * Marks site as connected if it's receiving its first event.
  * @param {object} eventData - raw event from controller (includes ipAddress, userAgent)
  * @returns {Promise<object>} inserted row (id, event_id)
  * @example
@@ -200,11 +201,33 @@ const saveEvent = async (eventData) => {
   const e = await normalizeEvent(eventData);
   const { text, values } = buildInsertQuery(e);
   const result = await db.query(text, values);
+  
+  // Mark site as connected if first event
+  if (e.site_id) {
+    try {
+      const siteCheck = await db.query(
+        'SELECT is_connected FROM sites WHERE id = $1',
+        [e.site_id]
+      );
+      
+      if (siteCheck.rows.length && !siteCheck.rows[0].is_connected) {
+        await db.query(
+          'UPDATE sites SET is_connected = true, first_event_at = NOW() WHERE id = $1',
+          [e.site_id]
+        );
+      }
+    } catch (err) {
+      console.error('Error marking site as connected:', err);
+      // Don't fail the event tracking if site update fails
+    }
+  }
+  
   return result.rows[0];
 };
 
 /**
  * Save multiple events in a transaction. Reuses ip/userAgent and enriches per event.
+ * Marks sites as connected if receiving their first events.
  * @param {Array<object>} events - array of raw events (each can override fields)
  * @param {string} ipAddress - request IP address fallback for all events
  * @param {string} userAgent - request user agent fallback for all events
@@ -216,6 +239,8 @@ const saveBatchEvents = async (events, ipAddress, userAgent) => {
     try {
       await client.query('BEGIN');
       const results = [];
+      const siteIds = new Set();
+      
       for (const ev of events) {
         const e = await normalizeEvent({
           ...ev,
@@ -225,7 +250,28 @@ const saveBatchEvents = async (events, ipAddress, userAgent) => {
         const { text, values } = buildInsertQuery(e);
         const res = await client.query(text, values);
         results.push(res.rows[0]);
+        if (e.site_id) siteIds.add(e.site_id);
       }
+      
+      // Mark sites as connected if first events
+      for (const siteId of siteIds) {
+        try {
+          const siteCheck = await client.query(
+            'SELECT is_connected FROM sites WHERE id = $1',
+            [siteId]
+          );
+          
+          if (siteCheck.rows.length && !siteCheck.rows[0].is_connected) {
+            await client.query(
+              'UPDATE sites SET is_connected = true, first_event_at = NOW() WHERE id = $1',
+              [siteId]
+            );
+          }
+        } catch (err) {
+          console.error('Error marking site as connected:', err);
+        }
+      }
+      
       await client.query('COMMIT');
       return results;
     } catch (error) {
