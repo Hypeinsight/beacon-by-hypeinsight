@@ -14,9 +14,8 @@ export default function DashboardLayout() {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <div className="w-64 border-r" style={{ backgroundColor: '#02202E', borderColor: 'rgba(255,255,255,0.1)' }}>
-        <div className="flex items-center h-16 px-6 border-b" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-          <h1 className="text-xl font-bold" style={{ color: '#46B646' }}>Beacon</h1>
-          <span className="ml-2 text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>by Hype Insight</span>
+        <div className="flex items-center h-16 px-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+          <img src="/beacon-logo.png" alt="Beacon Logo" className="h-12 object-contain" />
         </div>
         <nav className="p-4 space-y-1">
           {navigation.map((item) => (
