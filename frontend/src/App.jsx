@@ -7,6 +7,7 @@ import Visitors from './pages/Visitors';
 import VisitorDetail from './pages/VisitorDetail';
 import Companies from './pages/Companies';
 import Setup from './pages/Setup';
+import Onboarding from './pages/Onboarding';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
