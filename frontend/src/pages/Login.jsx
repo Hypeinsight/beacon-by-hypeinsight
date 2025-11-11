@@ -39,16 +39,8 @@ export default function Login() {
       <div className="w-full max-w-md space-y-8 relative z-10">
         {/* Logo/Header */}
         <div className="text-center">
-          {/* Beacon icon/logo */}
-          <div className="flex justify-center mb-4">
-            <div className="text-5xl font-bold">
-              <span className="text-cyan-400">●</span>
-              <span className="text-green-400 ml-1">▬</span>
-            </div>
-          </div>
-          <h1 className="text-5xl font-bold text-green-400 tracking-wider">Beacon</h1>
-          <p className="mt-2 text-cyan-300 text-sm font-medium">by Hype Insight</p>
-          <h2 className="mt-8 text-2xl font-bold text-white">Sign in to your account</h2>
+          <img src="/beacon-logo.png" alt="Beacon Logo" className="h-32 mx-auto mb-6" />
+          <h2 className="mt-4 text-2xl font-bold text-white">Sign in to your account</h2>
         </div>
 
         {/* Error Message */}
