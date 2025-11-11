@@ -30,18 +30,30 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Beacon glow background effect */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-400 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="w-full max-w-md space-y-8 relative z-10">
         {/* Logo/Header */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-blue-600">Beacon</h1>
-          <p className="mt-2 text-gray-600">by Hype Insight</p>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">Sign in to your account</h2>
+          {/* Beacon icon/logo */}
+          <div className="flex justify-center mb-4">
+            <div className="text-5xl font-bold">
+              <span className="text-cyan-400">●</span>
+              <span className="text-green-400 ml-1">▬</span>
+            </div>
+          </div>
+          <h1 className="text-5xl font-bold text-green-400 tracking-wider">Beacon</h1>
+          <p className="mt-2 text-cyan-300 text-sm font-medium">by Hype Insight</p>
+          <h2 className="mt-8 text-2xl font-bold text-white">Sign in to your account</h2>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <div className="bg-red-900/30 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
             {error}
           </div>
         )}
@@ -50,7 +62,7 @@ export default function Login() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
                 Email address
               </label>
               <input
@@ -61,13 +73,13 @@ export default function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-2 block w-full px-4 py-2.5 bg-slate-800 border border-cyan-500/30 text-white rounded-lg focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 placeholder-gray-500 transition"
                 placeholder="you@example.com"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300">
                 Password
               </label>
               <input
@@ -78,7 +90,7 @@ export default function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-2 block w-full px-4 py-2.5 bg-slate-800 border border-cyan-500/30 text-white rounded-lg focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 placeholder-gray-500 transition"
                 placeholder="••••••••"
               />
             </div>
@@ -87,16 +99,16 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-lg text-sm font-medium text-slate-900 bg-gradient-to-r from-cyan-400 to-green-400 hover:from-cyan-300 hover:to-green-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-400 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold"
           >
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 
         {/* Signup Link */}
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm text-gray-400">
           Don't have an account?{' '}
-          <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+          <Link to="/register" className="font-semibold text-green-400 hover:text-cyan-400 transition">
             Create one now
           </Link>
         </p>
