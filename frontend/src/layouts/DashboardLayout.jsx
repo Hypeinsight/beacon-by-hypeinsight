@@ -1,12 +1,15 @@
-import { Outlet, NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Building2, TestTube, Settings } from 'lucide-react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Users, Building2, Settings, LogOut } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function DashboardLayout() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
   const navigation = [
     { name: 'Overview', href: '/overview', icon: LayoutDashboard },
     { name: 'Visitors', href: '/visitors', icon: Users },
     { name: 'Companies', href: '/companies', icon: Building2 },
-    { name: 'Test Tracking', href: '/test', icon: TestTube },
     { name: 'Setup', href: '/setup', icon: Settings },
   ];
 
@@ -38,6 +41,18 @@ export default function DashboardLayout() {
             </NavLink>
           ))}
         </nav>
+        <div className="p-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+          <button
+            onClick={() => { logout(); navigate('/login'); }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg"
+            style={{ backgroundColor: '#0f2d3a', color: 'rgba(255,255,255,0.9)' }}
+            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#103645'; }}
+            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#0f2d3a'; }}
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
