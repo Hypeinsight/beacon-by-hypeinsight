@@ -8,12 +8,13 @@ const sitesService = require('../services/sitesService');
 /**
  * Create a new site
  * POST /api/sites
- * @param {object} req - Express request
+ * @param {object} req - Express request (authenticated)
  * @param {object} res - Express response
  */
 const createSite = async (req, res) => {
   try {
-    const { name, domain, agencyId, config } = req.body;
+    const userId = req.user.id;
+    const { name, domain, config } = req.body;
     
     // Validation
     if (!name || !domain) {
@@ -23,6 +24,18 @@ const createSite = async (req, res) => {
       });
     }
     
+    // Get user's agency
+    const db = require('../../config/database');
+    const userResult = await db.query(
+      'SELECT agency_id FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    if (!userResult.rows.length) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    const agencyId = userResult.rows[0].agency_id;
     const site = await sitesService.createSite({ name, domain, agencyId, config });
     
     res.status(201).json({
@@ -72,14 +85,28 @@ const getSite = async (req, res) => {
 };
 
 /**
- * Get all sites with optional filtering
+ * Get all sites with optional filtering (filtered by user's agency)
  * GET /api/sites
- * @param {object} req - Express request
+ * @param {object} req - Express request (authenticated)
  * @param {object} res - Express response
  */
 const getSites = async (req, res) => {
   try {
-    const { agencyId, status, limit, offset } = req.query;
+    const userId = req.user.id;
+    const { status, limit, offset } = req.query;
+    
+    // Get user's agency
+    const db = require('../../config/database');
+    const userResult = await db.query(
+      'SELECT agency_id FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    if (!userResult.rows.length) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    const agencyId = userResult.rows[0].agency_id;
     
     const sites = await sitesService.getSites({
       agencyId,

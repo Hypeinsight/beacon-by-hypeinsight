@@ -2,55 +2,58 @@
  * Sites Routes: REST API endpoints for site management.
  *
  * WHY: Defines the API surface for site CRUD operations.
- * Supports multi-tenant isolation via agencyId query parameter.
+ * Enforces multi-tenant isolation via authenticated user's agency.
  */
 const express = require('express');
 const router = express.Router();
 const sitesController = require('../controllers/sitesController');
+const { verifyJWT } = require('../middleware/authMiddleware');
 
 /**
  * @route POST /api/sites
  * @desc Create a new site
- * @body {name, domain, agencyId?, config?}
+ * @auth Required
+ * @body {name, domain, config?}
  * @returns {object} Created site
  */
-router.post('/', sitesController.createSite);
+router.post('/', verifyJWT, sitesController.createSite);
 
 /**
  * @route GET /api/sites
- * @desc Get all sites
- * @query {agencyId?, status?, limit?, offset?}
+ * @desc Get all sites for authenticated user's agency
+ * @auth Required
+ * @query {status?, limit?, offset?}
  * @returns {array} List of sites
  */
-router.get('/', sitesController.getSites);
+router.get('/', verifyJWT, sitesController.getSites);
 
 /**
  * @route GET /api/sites/:id
- * @desc Get site by ID
+ * @desc Get site by ID (for user's agency only)
+ * @auth Required
  * @param {string} id - Site ID
- * @query {agencyId?} - For agency isolation
  * @returns {object} Site
  */
-router.get('/:id', sitesController.getSite);
+router.get('/:id', verifyJWT, sitesController.getSite);
 
 /**
  * @route PUT /api/sites/:id
- * @desc Update site
+ * @desc Update site (for user's agency only)
+ * @auth Required
  * @param {string} id - Site ID
- * @query {agencyId?} - For agency isolation
  * @body {name?, domain?, config?, status?}
  * @returns {object} Updated site
  */
-router.put('/:id', sitesController.updateSite);
+router.put('/:id', verifyJWT, sitesController.updateSite);
 
 /**
  * @route DELETE /api/sites/:id
- * @desc Delete site (soft delete)
+ * @desc Delete site (soft delete, for user's agency only)
+ * @auth Required
  * @param {string} id - Site ID
- * @query {agencyId?} - For agency isolation
  * @returns {object} Success message
  */
-router.delete('/:id', sitesController.deleteSite);
+router.delete('/:id', verifyJWT, sitesController.deleteSite);
 
 /**
  * @route GET /api/sites/:id/script
