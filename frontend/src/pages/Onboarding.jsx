@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { CheckCircle, ArrowRight } from 'lucide-react';
-import axios from 'axios';
+import axios from '../lib/axios';
 
 export default function Onboarding() {
   const { user } = useAuth();
@@ -11,7 +11,6 @@ export default function Onboarding() {
   const [siteDomain, setSiteDomain] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   const handleCreateSite = async (e) => {
     e.preventDefault();
@@ -19,19 +18,11 @@ export default function Onboarding() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-      
       // Create the first site
-      const response = await axios.post(
-        `${API_URL}/api/sites`,
-        {
-          name: siteName,
-          domain: siteDomain,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await axios.post('/api/sites', {
+        name: siteName,
+        domain: siteDomain,
+      });
 
       if (response.data.success) {
         // Redirect to Overview after successful site creation

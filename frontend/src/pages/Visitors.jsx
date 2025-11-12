@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Globe, Monitor, MapPin, Clock, Activity, Building2 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../lib/axios';
 
 export default function Visitors() {
   const [visitors, setVisitors] = useState([]);
@@ -14,11 +14,7 @@ export default function Visitors() {
 
   const loadVisitors = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/debug/events`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get('/api/debug/events');
       const events = response.data.events || [];
       
       // Group events by client_id to create visitor profiles

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Settings, Copy, CheckCircle, Code, ExternalLink, Wrench } from 'lucide-react';
-import axios from 'axios';
+import axios from '../lib/axios';
 
 export default function Setup() {
   const [copied, setCopied] = useState(false);
@@ -15,10 +15,7 @@ export default function Setup() {
 
   const loadSites = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/sites`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get('/api/sites');
       setSites(response.data.data || []);
       if (response.data.data && response.data.data.length > 0) {
         setSelectedSiteId(response.data.data[0].id);

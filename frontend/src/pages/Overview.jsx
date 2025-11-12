@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Building2, TrendingUp, Clock, MousePointer, FileText, ExternalLink, AlertCircle } from 'lucide-react';
-import axios from 'axios';
+import axios from '../lib/axios';
 
 export default function Overview() {
   const navigate = useNavigate();
@@ -23,11 +23,7 @@ export default function Overview() {
 
   const checkConnectedSites = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/sites`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get('/api/sites');
       
       const sites = response.data.data || [];
       const connectedSites = sites.filter(s => s.is_connected);
@@ -44,11 +40,7 @@ export default function Overview() {
 
   const loadData = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/debug/events`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get('/api/debug/events');
       setStats({
         totalVisitors: response.data.visitors || 0,
         pageViews: response.data.pageViews || 0,
