@@ -20,6 +20,13 @@ async function runMigration() {
       ADD COLUMN IF NOT EXISTS first_event_at TIMESTAMP
     `);
     console.log('✓ Added first_event_at column');
+
+    // Add deleted_at column (for soft deletes)
+    await db.query(`
+      ALTER TABLE sites 
+      ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP
+    `);
+    console.log('✓ Added deleted_at column');
     
     // Update existing sites that have events
     await db.query(`
