@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../lib/axios';
 
 const AuthContext = createContext(null);
 
@@ -8,17 +8,13 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
   // Check if user is already authenticated on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await axios.get(`${API_URL}/api/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await axios.get('/api/auth/me');
           setUser(response.data.data);
         }
       } catch (err) {
@@ -35,7 +31,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (email, password, name) => {
     try {
       setError(null);
-      const response = await axios.post(`${API_URL}/api/auth/register`, {
+      const response = await axios.post('/api/auth/register', {
         email,
         password,
         name,
@@ -56,7 +52,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setError(null);
-      const response = await axios.post(`${API_URL}/api/auth/login`, {
+      const response = await axios.post('/api/auth/login', {
         email,
         password,
       });
@@ -80,12 +76,11 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (currentPassword, newPassword, confirmPassword) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `${API_URL}/api/auth/change-password`,
-        { currentPassword, newPassword, confirmPassword },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.post('/api/auth/change-password', {
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      });
       return { success: true };
     } catch (err) {
       const message = err.response?.data?.message || 'Password change failed';
