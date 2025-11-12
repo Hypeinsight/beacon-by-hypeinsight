@@ -99,7 +99,11 @@ const trackBatch = async (req, res, next) => {
     // Extract IP address (check for proxied requests)
     const ipAddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
     
+    console.log('[trackBatch] Processing', events.length, 'events from IP:', ipAddress);
+    
     const results = await trackingService.saveBatchEvents(events, ipAddress, req.get('user-agent'));
+
+    console.log('[trackBatch] Successfully tracked', results.length, 'events');
 
     res.status(201).json({
       status: 'success',
@@ -109,6 +113,7 @@ const trackBatch = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error('[trackBatch] Error:', error.message, error.stack);
     next(error);
   }
 };
