@@ -14,7 +14,7 @@ router.get('/events', verifyJWT, async (req, res) => {
     
     // Get user's agency
     const userResult = await db.query(
-      'SELECT agency_id FROM users WHERE id = $1',
+      'SELECT agency_id FROM dashboard_users WHERE id = $1',
       [userId]
     );
     

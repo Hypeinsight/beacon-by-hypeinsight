@@ -27,7 +27,7 @@ const createSite = async (req, res) => {
     // Get user's agency
     const db = require('../../config/database');
     const userResult = await db.query(
-      'SELECT agency_id FROM users WHERE id = $1',
+      'SELECT agency_id FROM dashboard_users WHERE id = $1',
       [userId]
     );
     
@@ -98,7 +98,7 @@ const getSites = async (req, res) => {
     // Get user's agency
     const db = require('../../config/database');
     const userResult = await db.query(
-      'SELECT agency_id FROM users WHERE id = $1',
+      'SELECT agency_id FROM dashboard_users WHERE id = $1',
       [userId]
     );
     
