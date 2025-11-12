@@ -88,7 +88,16 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Serve static files (beacon.js tracking script)
+// Serve static files (beacon.js tracking script) with permissive CORS
+// The tracking script needs to be loadable from ANY website
+const staticCorsOptions = {
+  origin: '*', // Allow any origin for tracking script
+  credentials: false,
+  methods: ['GET', 'OPTIONS'],
+};
+
+app.use('/beacon-dev.js', cors(staticCorsOptions), express.static('public'));
+app.use('/beacon.js', cors(staticCorsOptions), express.static('public'));
 app.use(express.static('public'));
 app.use('/tests', express.static('tests'));
 
