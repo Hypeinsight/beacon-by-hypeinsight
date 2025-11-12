@@ -96,8 +96,18 @@ const staticCorsOptions = {
   methods: ['GET', 'OPTIONS'],
 };
 
-app.use('/beacon-dev.js', cors(staticCorsOptions), express.static('public'));
-app.use('/beacon.js', cors(staticCorsOptions), express.static('public'));
+const path = require('path');
+
+// Serve tracking scripts with permissive CORS
+app.get('/beacon-dev.js', cors(staticCorsOptions), (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/beacon-dev.js'));
+});
+
+app.get('/beacon.js', cors(staticCorsOptions), (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/beacon.js'));
+});
+
+// Serve other static files normally
 app.use(express.static('public'));
 app.use('/tests', express.static('tests'));
 
