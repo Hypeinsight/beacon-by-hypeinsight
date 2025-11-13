@@ -10,6 +10,7 @@ const GA4_ENDPOINT = 'https://www.google-analytics.com/mp/collect';
  */
 const mapEventToGA4 = (eventData) => {
   const params = {
+    client_id: eventData.client_id || eventData.clientId || 'unknown',
     events: [
       {
         name: eventData.event || 'page_view',
@@ -17,13 +18,15 @@ const mapEventToGA4 = (eventData) => {
           page_location: eventData.page_url,
           page_path: eventData.page_path,
           page_title: eventData.page_title,
-          session_id: eventData.sessionId,
-          user_id: eventData.userId,
-          timestamp_micros: `${Date.now()}000`,
+          session_id: eventData.session_id || eventData.sessionId,
+          engagement_time_msec: eventData.engagement_time_msec || 100,
+          ...(eventData.user_id && { user_id: eventData.user_id }),
           // UTM parameters
           ...(eventData.utm_source && { utm_source: eventData.utm_source }),
           ...(eventData.utm_medium && { utm_medium: eventData.utm_medium }),
           ...(eventData.utm_campaign && { utm_campaign: eventData.utm_campaign }),
+          ...(eventData.utm_term && { utm_term: eventData.utm_term }),
+          ...(eventData.utm_content && { utm_content: eventData.utm_content }),
         },
       },
     ],

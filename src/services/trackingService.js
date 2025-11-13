@@ -249,6 +249,7 @@ const saveBatchEvents = async (events, ipAddress, userAgent) => {
   try {
     await client.query('BEGIN');
     const results = [];
+    const normalizedEvents = [];
     const siteIds = new Set();
       
       for (const ev of events) {
@@ -260,14 +261,15 @@ const saveBatchEvents = async (events, ipAddress, userAgent) => {
         const { text, values } = buildInsertQuery(e);
         const res = await client.query(text, values);
         results.push(res.rows[0]);
+        normalizedEvents.push(e);
         if (e.site_id) siteIds.add(e.site_id);
       }
       
-      // Mark sites as connected if first events
+      // Mark sites as connected if first events and forward to destinations
       for (const siteId of siteIds) {
         try {
           const siteCheck = await client.query(
-            'SELECT is_connected FROM sites WHERE id = $1',
+            'SELECT is_connected, config FROM sites WHERE id = $1',
             [siteId]
           );
           
@@ -276,6 +278,21 @@ const saveBatchEvents = async (events, ipAddress, userAgent) => {
               'UPDATE sites SET is_connected = true, first_event_at = NOW() WHERE id = $1',
               [siteId]
             );
+          }
+          
+          // Forward events to configured destinations (GA4, Meta, Google Ads)
+          if (siteCheck.rows.length && siteCheck.rows[0].config) {
+            const siteConfig = siteCheck.rows[0].config;
+            // Forward each event for this site
+            for (const normalizedEvent of normalizedEvents) {
+              if (normalizedEvent.site_id === siteId) {
+                try {
+                  await destinationManager.routeEvent(normalizedEvent, siteConfig);
+                } catch (destErr) {
+                  console.error('Destination forwarding failed for batch event:', destErr);
+                }
+              }
+            }
           }
         } catch (err) {
           console.error('Error marking site as connected:', err);
