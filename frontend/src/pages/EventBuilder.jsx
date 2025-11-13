@@ -308,9 +308,29 @@ export default function EventBuilder() {
             </div>
 
             {/* Instructions */}
-            <div className="p-4 bg-blue-50 border-b border-blue-200">
-              <p className="text-sm text-blue-800">
-                <strong>How to use:</strong> Hover over elements to highlight them, then click to select. The CSS selector will be automatically copied to your event.
+            <div className="p-4 bg-yellow-50 border-b border-yellow-200">
+              <p className="text-sm text-yellow-800 mb-3">
+                <strong>⚠️ CORS Limitation:</strong> Due to browser security, the live selector tool may not work in the iframe below.
+              </p>
+              <p className="text-sm text-gray-700 mb-2">
+                <strong>Alternative method:</strong> Use this bookmarklet on your actual website:
+              </p>
+              <div className="flex gap-2 items-center">
+                <code className="flex-1 text-xs bg-white p-2 rounded border border-gray-300 overflow-x-auto">
+                  javascript:(function(){{const s=document.createElement('script');s.src='https://beacon-dashboard.onrender.com/selector-helper.js';document.body.appendChild(s);}})();
+                </code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText("javascript:(function(){const s=document.createElement('script');s.src='https://beacon-dashboard.onrender.com/selector-helper.js';document.body.appendChild(s);})()");
+                    setMessage({ type: 'success', text: 'Bookmarklet copied! Drag to your bookmarks bar or paste in browser console.' });
+                  }}
+                  className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm whitespace-nowrap"
+                >
+                  Copy Bookmarklet
+                </button>
+              </div>
+              <p className="text-xs text-gray-600 mt-2">
+                <strong>How to use:</strong> Copy the bookmarklet → Visit your website → Paste in browser console → Hover & click elements to see their selectors
               </p>
             </div>
 
@@ -332,17 +352,18 @@ export default function EventBuilder() {
 function SelectorHelperIframe({ url, onSelectorSelected }) {
   const iframeRef = useRef(null);
 
-  useEffect(() => {
+  const handleLoad = () => {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
-    const handleLoad = () => {
-      try {
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        
-        // Inject selector detection script
-        const script = iframeDoc.createElement('script');
-        script.textContent = `
+    try {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      
+      console.log('Iframe loaded, injecting script...');
+      
+      // Inject selector detection script
+      const script = iframeDoc.createElement('script');
+      script.textContent = `
           (function() {
             let hoveredElement = null;
             let overlay = null;
@@ -411,18 +432,17 @@ function SelectorHelperIframe({ url, onSelectorSelected }) {
           })();
         `;
         iframeDoc.body.appendChild(script);
+        console.log('Script injected successfully!');
       } catch (error) {
-        console.error('Cannot inject script (CORS):', error);
+        console.error('Cannot inject script (CORS blocked):', error);
+        alert('Cannot access this website due to CORS restrictions. Please use the bookmarklet method above instead.');
       }
-    };
-
-    iframe.addEventListener('load', handleLoad);
-    return () => iframe.removeEventListener('load', handleLoad);
-  }, []);
+  };
 
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.data.type === 'SELECTOR_SELECTED') {
+        console.log('Selector received:', event.data.selector);
         onSelectorSelected(event.data.selector);
       }
     };
@@ -435,6 +455,7 @@ function SelectorHelperIframe({ url, onSelectorSelected }) {
     <iframe
       ref={iframeRef}
       src={url}
+      onLoad={handleLoad}
       className="w-full h-full border-0"
       title="Website Preview"
     />
