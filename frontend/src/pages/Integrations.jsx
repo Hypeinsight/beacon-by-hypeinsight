@@ -244,7 +244,7 @@ export default function Integrations() {
                   <span className="ml-2 text-sm text-gray-700">Only page views</span>
                 </label>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Configure which events to send to GA4. You can add custom filtering later.</p>
+              <p className="text-xs text-gray-500 mt-1">Events are prefixed with 'beacon_' in GA4 (e.g., beacon_page_view) to avoid conflicts with existing GA4 tracking.</p>
             </div>
           </div>
         )}

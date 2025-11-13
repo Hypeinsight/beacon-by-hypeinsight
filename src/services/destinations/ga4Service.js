@@ -9,11 +9,15 @@ const GA4_ENDPOINT = 'https://www.google-analytics.com/mp/collect';
  * Map event data to GA4 format
  */
 const mapEventToGA4 = (eventData) => {
+  // Prefix event name with 'beacon_' to avoid conflicts with native GA4 tracking
+  const eventName = eventData.event || 'page_view';
+  const ga4EventName = `beacon_${eventName}`;
+  
   const params = {
     client_id: eventData.client_id || eventData.clientId || 'unknown',
     events: [
       {
-        name: eventData.event || 'page_view',
+        name: ga4EventName,
         params: {
           page_location: eventData.page_url,
           page_path: eventData.page_path,
