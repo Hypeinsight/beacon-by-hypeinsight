@@ -19,13 +19,19 @@ const routeEvent = async (eventData, siteConfig) => {
 
   // GA4
   if (destinations.ga4 && destinations.ga4.enabled) {
-    try {
-      await ga4Service.sendEvent(eventData, destinations.ga4);
-      delivered++;
-      results.ga4 = { success: true };
-    } catch (error) {
-      results.ga4 = { success: false, error: error.message };
-      console.error('GA4 delivery failed:', error);
+    // Check if event should be forwarded
+    const allowedEvents = destinations.ga4.events || ['*'];
+    const shouldForward = allowedEvents.includes('*') || allowedEvents.includes(eventData.event);
+    
+    if (shouldForward) {
+      try {
+        await ga4Service.sendEvent(eventData, destinations.ga4);
+        delivered++;
+        results.ga4 = { success: true };
+      } catch (error) {
+        results.ga4 = { success: false, error: error.message };
+        console.error('GA4 delivery failed:', error);
+      }
     }
   }
 

@@ -13,6 +13,7 @@ export default function Integrations() {
   const [ga4Enabled, setGa4Enabled] = useState(false);
   const [ga4MeasurementId, setGa4MeasurementId] = useState('');
   const [ga4ApiSecret, setGa4ApiSecret] = useState('');
+  const [ga4Events, setGa4Events] = useState(['page_view']);
   
   // Meta Config
   const [metaEnabled, setMetaEnabled] = useState(false);
@@ -56,6 +57,7 @@ export default function Integrations() {
       setGa4Enabled(false);
       setGa4MeasurementId('');
       setGa4ApiSecret('');
+      setGa4Events(['page_view']);
       setMetaEnabled(false);
       setMetaPixelId('');
       setMetaAccessToken('');
@@ -71,6 +73,7 @@ export default function Integrations() {
           setGa4Enabled(destinations.ga4.enabled || false);
           setGa4MeasurementId(destinations.ga4.measurementId || '');
           setGa4ApiSecret(destinations.ga4.apiSecret || '');
+          setGa4Events(destinations.ga4.events || ['page_view']);
         }
         
         // Meta
@@ -101,7 +104,8 @@ export default function Integrations() {
         ga4: {
           enabled: ga4Enabled,
           measurementId: ga4MeasurementId,
-          apiSecret: ga4ApiSecret
+          apiSecret: ga4ApiSecret,
+          events: ga4Events
         },
         meta: {
           enabled: metaEnabled,
@@ -217,6 +221,30 @@ export default function Integrations() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
               <p className="text-xs text-gray-500 mt-1">Found in GA4 Admin → Data Streams → Measurement Protocol API secrets</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Event Forwarding</label>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    checked={ga4Events.includes('*')}
+                    onChange={() => setGa4Events(['*'])}
+                    className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Forward all events</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    checked={ga4Events.includes('page_view') && !ga4Events.includes('*')}
+                    onChange={() => setGa4Events(['page_view'])}
+                    className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Only page views</span>
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Configure which events to send to GA4. You can add custom filtering later.</p>
             </div>
           </div>
         )}
