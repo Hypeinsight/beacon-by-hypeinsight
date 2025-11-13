@@ -399,6 +399,94 @@ const getIntegrationStats = async (req, res) => {
   }
 };
 
+/**
+ * Update custom event configs for a site
+ * PUT /api/sites/:id/custom-events
+ */
+const updateCustomEvents = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { customEvents } = req.body;
+    
+    // Get user's agency
+    const db = require('../../config/database');
+    const userResult = await db.query(
+      'SELECT agency_id FROM dashboard_users WHERE id = $1',
+      [userId]
+    );
+    
+    if (!userResult.rows.length) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    const agencyId = userResult.rows[0].agency_id;
+    
+    // Verify site belongs to user's agency
+    const siteResult = await db.query(
+      'SELECT config FROM sites WHERE id = $1 AND agency_id = $2',
+      [id, agencyId]
+    );
+    
+    if (!siteResult.rows.length) {
+      return res.status(404).json({ success: false, error: 'Site not found' });
+    }
+    
+    // Merge customEvents into existing config
+    const currentConfig = siteResult.rows[0].config || {};
+    const updatedConfig = {
+      ...currentConfig,
+      customEvents: customEvents
+    };
+    
+    // Update site config
+    await db.query(
+      'UPDATE sites SET config = $1, updated_at = NOW() WHERE id = $2',
+      [JSON.stringify(updatedConfig), id]
+    );
+    
+    res.json({
+      success: true,
+      message: 'Custom events updated successfully',
+      data: { customEvents }
+    });
+  } catch (error) {
+    console.error('Error updating custom events:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update custom events'
+    });
+  }
+};
+
+/**
+ * Get custom events for a site by script ID (public endpoint for tracking script)
+ * GET /api/sites/script/:scriptId/custom-events
+ */
+const getCustomEventsByScriptId = async (req, res) => {
+  try {
+    const { scriptId } = req.params;
+    const db = require('../../config/database');
+    
+    const result = await db.query(
+      'SELECT config FROM sites WHERE script_id = $1 AND status = $2',
+      [scriptId, 'active']
+    );
+    
+    if (!result.rows.length) {
+      return res.json({ customEvents: [] });
+    }
+    
+    const config = result.rows[0].config || {};
+    const customEvents = config.customEvents || [];
+    
+    res.json({ customEvents });
+  } catch (error) {
+    console.error('Error fetching custom events:', error);
+    res.json({ customEvents: [] });
+  }
+};
+
 module.exports = {
   createSite,
   getSite,
@@ -409,4 +497,6 @@ module.exports = {
   getSiteStats,
   updateDestinations,
   getIntegrationStats,
+  updateCustomEvents,
+  getCustomEventsByScriptId,
 };

@@ -41,6 +41,7 @@
   let pageLoadTime = Date.now();
   let lastActivityTime = Date.now();
   let isFirstVisit = false;
+  let customEventConfigs = [];
 
   /**
    * Generate a UUID v4
@@ -585,6 +586,93 @@
   }
 
   /**
+   * Fetch custom event configs from API
+   */
+  function fetchCustomEventConfigs() {
+    // Fetch configs from API endpoint
+    fetch(API_ENDPOINT.replace('/track', '/sites/script/' + siteId + '/custom-events'), {
+      method: 'GET',
+      credentials: 'omit'
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.customEvents) {
+        customEventConfigs = data.customEvents;
+        console.log('[Beacon] Loaded', customEventConfigs.length, 'custom event configs');
+        setupCustomEventTracking();
+      }
+    })
+    .catch(err => console.log('[Beacon] No custom events configured'));
+  }
+  
+  /**
+   * Setup custom event tracking based on configs from Event Builder
+   */
+  function setupCustomEventTracking() {
+    customEventConfigs.forEach(function(config) {
+      console.log('[Beacon] Setting up custom event:', config.eventName, 'for', config.selector);
+      
+      if (config.type === 'click') {
+        // Click event
+        document.addEventListener('click', function(e) {
+          var target = e.target;
+          // Check if clicked element or parent matches selector
+          if (target.matches && (target.matches(config.selector) || target.closest(config.selector))) {
+            console.log('[Beacon] Custom click event triggered:', config.eventName);
+            trackCustomEvent(config.eventName, config, target);
+          }
+        }, true);
+      } else if (config.type === 'submit') {
+        // Form submit event
+        document.addEventListener('submit', function(e) {
+          var target = e.target;
+          if (target.matches && target.matches(config.selector)) {
+            console.log('[Beacon] Custom submit event triggered:', config.eventName);
+            trackCustomEvent(config.eventName, config, target);
+          }
+        }, true);
+      } else if (config.type === 'pageview') {
+        // URL pattern match
+        var pattern = config.selector.replace(/\*/g, '.*');
+        var regex = new RegExp(pattern);
+        if (regex.test(window.location.pathname)) {
+          console.log('[Beacon] Custom pageview event triggered:', config.eventName);
+          trackCustomEvent(config.eventName, config, null);
+        }
+      }
+    });
+  }
+  
+  /**
+   * Track custom event and push to dataLayer
+   */
+  function trackCustomEvent(eventName, config, element) {
+    var properties = config.properties || {};
+    
+    // Add element context if available
+    if (element) {
+      properties.element_id = element.id || null;
+      properties.element_class = element.className || null;
+      properties.element_text = element.textContent ? element.textContent.trim().substring(0, 100) : null;
+    }
+    
+    // Track in Beacon
+    var eventData = buildEventData(eventName, properties);
+    queueEvent(eventData);
+    updateSessionActivity();
+    
+    // Push to dataLayer for GTM/other tools (avoid loop)
+    if (typeof window.dataLayer !== 'undefined') {
+      window.dataLayer.push({
+        event: eventName,
+        beaconCustomEvent: true,
+        properties: properties
+      });
+      console.log('[Beacon] Pushed custom event to dataLayer:', eventName);
+    }
+  }
+
+  /**
    * Initialize tracking
    */
   function init(id, options = {}) {
@@ -606,6 +694,9 @@
     
     // Set up dataLayer tracking first
     setupDataLayerTracking();
+    
+    // Fetch and setup custom event tracking from Event Builder
+    fetchCustomEventConfigs();
     
     // Disable built-in form tracking - rely on dataLayer events instead
     // setupFormTracking();

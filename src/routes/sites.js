@@ -92,4 +92,22 @@ router.put('/:id/destinations', verifyJWT, sitesController.updateDestinations);
  */
 router.get('/:id/integration-stats', verifyJWT, sitesController.getIntegrationStats);
 
+/**
+ * @route PUT /api/sites/:id/custom-events
+ * @desc Update custom event configs for Event Builder
+ * @auth Required
+ * @param {string} id - Site ID
+ * @body {customEvents} - Array of event configs
+ * @returns {object} Success message
+ */
+router.put('/:id/custom-events', verifyJWT, sitesController.updateCustomEvents);
+
+/**
+ * @route GET /api/sites/script/:scriptId/custom-events
+ * @desc Get custom event configs by script ID (public, for tracking script)
+ * @param {string} scriptId - Site script ID
+ * @returns {object} Custom events array
+ */
+router.get('/script/:scriptId/custom-events', sitesController.getCustomEventsByScriptId);
+
 module.exports = router;
