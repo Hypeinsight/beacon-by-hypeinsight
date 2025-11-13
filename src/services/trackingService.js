@@ -10,6 +10,7 @@ const db = require('../../config/database');
 const { v4: uuidv4 } = require('uuid');
 const { enrichIP } = require('./ipEnrichmentService');
 const { parseUserAgent } = require('../utils/userAgentParser');
+const destinationManager = require('./destinations/destinationManager');
 
 /**
  * Look up site UUID from script_id
@@ -206,7 +207,7 @@ const saveEvent = async (eventData) => {
   if (e.site_id) {
     try {
       const siteCheck = await db.query(
-        'SELECT is_connected FROM sites WHERE id = $1',
+        'SELECT is_connected, config FROM sites WHERE id = $1',
         [e.site_id]
       );
       
@@ -215,6 +216,16 @@ const saveEvent = async (eventData) => {
           'UPDATE sites SET is_connected = true, first_event_at = NOW() WHERE id = $1',
           [e.site_id]
         );
+      }
+      
+      // Forward event to configured destinations (GA4, Meta, Google Ads)
+      if (siteCheck.rows.length && siteCheck.rows[0].config) {
+        try {
+          await destinationManager.routeEvent(e, siteCheck.rows[0].config);
+        } catch (destErr) {
+          console.error('Destination forwarding failed:', destErr);
+          // Don't fail tracking if destination fails
+        }
       }
     } catch (err) {
       console.error('Error marking site as connected:', err);

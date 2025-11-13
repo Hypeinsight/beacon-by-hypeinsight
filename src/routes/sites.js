@@ -73,4 +73,14 @@ router.get('/:id/script', sitesController.getTrackingScript);
  */
 router.get('/:id/stats', sitesController.getSiteStats);
 
+/**
+ * @route PUT /api/sites/:id/destinations
+ * @desc Update site destination configs (GA4, Meta, Google Ads)
+ * @auth Required
+ * @param {string} id - Site ID
+ * @body {destinations} - Destination configs object
+ * @returns {object} Success message
+ */
+router.put('/:id/destinations', verifyJWT, sitesController.updateDestinations);
+
 module.exports = router;

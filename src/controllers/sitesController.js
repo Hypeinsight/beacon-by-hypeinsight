@@ -278,6 +278,68 @@ const getSiteStats = async (req, res) => {
   }
 };
 
+/**
+ * Update site destination configs (GA4, Meta, Google Ads)
+ * PUT /api/sites/:id/destinations
+ * @param {object} req - Express request
+ * @param {object} res - Express response
+ */
+const updateDestinations = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { destinations } = req.body;
+    
+    // Get user's agency
+    const db = require('../../config/database');
+    const userResult = await db.query(
+      'SELECT agency_id FROM dashboard_users WHERE id = $1',
+      [userId]
+    );
+    
+    if (!userResult.rows.length) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    const agencyId = userResult.rows[0].agency_id;
+    
+    // Verify site belongs to user's agency
+    const siteResult = await db.query(
+      'SELECT config FROM sites WHERE id = $1 AND agency_id = $2',
+      [id, agencyId]
+    );
+    
+    if (!siteResult.rows.length) {
+      return res.status(404).json({ success: false, error: 'Site not found' });
+    }
+    
+    // Merge destinations into existing config
+    const currentConfig = siteResult.rows[0].config || {};
+    const updatedConfig = {
+      ...currentConfig,
+      destinations: destinations
+    };
+    
+    // Update site config
+    await db.query(
+      'UPDATE sites SET config = $1, updated_at = NOW() WHERE id = $2',
+      [JSON.stringify(updatedConfig), id]
+    );
+    
+    res.json({
+      success: true,
+      message: 'Destinations updated successfully',
+      data: { destinations }
+    });
+  } catch (error) {
+    console.error('Error updating destinations:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update destinations'
+    });
+  }
+};
+
 module.exports = {
   createSite,
   getSite,
@@ -286,4 +348,5 @@ module.exports = {
   deleteSite,
   getTrackingScript,
   getSiteStats,
+  updateDestinations,
 };

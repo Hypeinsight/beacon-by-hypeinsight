@@ -7,6 +7,7 @@ import Visitors from './pages/Visitors';
 import VisitorDetail from './pages/VisitorDetail';
 import Companies from './pages/Companies';
 import Setup from './pages/Setup';
+import Integrations from './pages/Integrations';
 import Onboarding from './pages/Onboarding';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -45,6 +46,7 @@ function App() {
             <Route path="visitors/:clientId" element={<VisitorDetail />} />
             <Route path="companies" element={<Companies />} />
             <Route path="setup" element={<Setup />} />
+            <Route path="integrations" element={<Integrations />} />
             <Route path="*" element={<Navigate to="/overview" replace />} />
           </Route>
         </Routes>
