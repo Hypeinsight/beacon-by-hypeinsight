@@ -216,28 +216,98 @@ const changePassword = async (userId, currentPassword, newPassword) => {
 };
 
 /**
- * Request password reset (admin only - generates temporary password)
- * @param {string} userId - User ID to reset
- * @returns {Promise<string>} Temporary password
+ * Request password reset - sends email with reset token
+ * @param {string} email - User email
+ * @returns {Promise<void>}
  */
-const resetPassword = async (userId) => {
-  const tempPassword = generateRandomPassword();
-  const passwordHash = await bcrypt.hash(tempPassword, BCRYPT_ROUNDS);
-
-  await db.query(
-    'UPDATE dashboard_users SET password_hash = $1 WHERE id = $2',
-    [passwordHash, userId]
+const requestPasswordReset = async (email) => {
+  const crypto = require('crypto');
+  const sgMail = require('@sendgrid/mail');
+  
+  // Check if user exists
+  const result = await db.query(
+    'SELECT id, name FROM dashboard_users WHERE email = $1 AND status = $2',
+    [email, 'active']
   );
 
-  return tempPassword;
+  if (result.rows.length === 0) {
+    // Don't reveal if email doesn't exist
+    return;
+  }
+
+  const user = result.rows[0];
+  
+  // Generate reset token (32 random bytes)
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  // Store token in database
+  await db.query(
+    'UPDATE dashboard_users SET reset_token = $1, reset_token_expiry = $2 WHERE id = $3',
+    [resetToken, resetTokenExpiry, user.id]
+  );
+
+  // Send email with reset link
+  const apiKey = process.env.SENDGRID_API_KEY;
+  if (apiKey) {
+    sgMail.setApiKey(apiKey);
+    
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    const msg = {
+      to: email,
+      from: process.env.FROM_EMAIL || 'noreply@beacon.com',
+      subject: 'Reset Your Beacon Password',
+      html: `
+        <h1>Password Reset Request</h1>
+        <p>Hi ${user.name},</p>
+        <p>We received a request to reset your password. Click the link below to reset it:</p>
+        <p><a href="${resetUrl}" style="background-color: #46B646; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a></p>
+        <p>This link will expire in 1 hour.</p>
+        <p>If you didn't request this, you can safely ignore this email.</p>
+        <p>Thanks,<br>The Beacon Team</p>
+      `,
+    };
+
+    await sgMail.send(msg);
+    console.log('Password reset email sent to:', email);
+  } else {
+    console.log('SendGrid not configured. Reset token:', resetToken);
+  }
 };
 
 /**
- * Generate random password
- * @returns {string} Random password
+ * Reset password with token
+ * @param {string} token - Reset token
+ * @param {string} newPassword - New password
+ * @returns {Promise<void>}
  */
-const generateRandomPassword = () => {
-  return Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+const resetPassword = async (token, newPassword) => {
+  if (!token || !newPassword) {
+    throw new Error('Token and password are required');
+  }
+
+  // Find user with valid token
+  const result = await db.query(
+    'SELECT id FROM dashboard_users WHERE reset_token = $1 AND reset_token_expiry > NOW() AND status = $2',
+    [token, 'active']
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error('Invalid or expired reset token');
+  }
+
+  const user = result.rows[0];
+
+  // Hash new password
+  const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+
+  // Update password and clear reset token
+  await db.query(
+    'UPDATE dashboard_users SET password_hash = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2',
+    [passwordHash, user.id]
+  );
 };
 
 module.exports = {
@@ -247,5 +317,6 @@ module.exports = {
   generateToken,
   getUserById,
   changePassword,
+  requestPasswordReset,
   resetPassword,
 };

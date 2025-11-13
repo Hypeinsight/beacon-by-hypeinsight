@@ -46,4 +46,20 @@ router.post('/logout', authController.logout);
  */
 router.post('/change-password', verifyJWT, authController.changePassword);
 
+/**
+ * @route POST /api/auth/forgot-password
+ * @desc Request password reset email
+ * @body {email}
+ * @returns {object} Success message
+ */
+router.post('/forgot-password', authController.forgotPassword);
+
+/**
+ * @route POST /api/auth/reset-password
+ * @desc Reset password with token
+ * @body {token, password}
+ * @returns {object} Success message
+ */
+router.post('/reset-password', authController.resetPassword);
+
 module.exports = router;

@@ -169,10 +169,77 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+/**
+ * Request password reset (send email with token)
+ */
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        error: 'Email is required',
+      });
+    }
+
+    await authService.requestPasswordReset(email);
+
+    // Always return success (don't reveal if email exists)
+    res.json({
+      success: true,
+      message: 'If that email exists, a reset link has been sent',
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    // Don't expose errors to user
+    res.json({
+      success: true,
+      message: 'If that email exists, a reset link has been sent',
+    });
+  }
+};
+
+/**
+ * Reset password with token
+ */
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        error: 'Token and password are required',
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters',
+      });
+    }
+
+    await authService.resetPassword(token, password);
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully',
+    });
+  } catch (error) {
+    if (error.message.includes('Invalid') || error.message.includes('expired')) {
+      return res.status(400).json({
+        error: 'Invalid or expired reset token',
+      });
+    }
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   getCurrentUser,
   logout,
   changePassword,
+  forgotPassword,
+  resetPassword,
 };
