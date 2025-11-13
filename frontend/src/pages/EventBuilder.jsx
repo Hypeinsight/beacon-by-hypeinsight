@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Zap, Plus, Trash2, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Zap, Plus, Trash2, Save, AlertCircle, CheckCircle, Target, X } from 'lucide-react';
 import axios from '../lib/axios';
 
 export default function EventBuilder() {
@@ -9,6 +9,9 @@ export default function EventBuilder() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [customEvents, setCustomEvents] = useState([]);
+  const [selectorHelperOpen, setSelectorHelperOpen] = useState(false);
+  const [currentEventId, setCurrentEventId] = useState(null);
+  const [siteUrl, setSiteUrl] = useState('');
 
   useEffect(() => {
     loadSites();
@@ -86,6 +89,29 @@ export default function EventBuilder() {
       setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to save events' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const openSelectorHelper = (eventId) => {
+    const site = sites.find(s => s.id === selectedSiteId);
+    if (site) {
+      setSiteUrl(`https://${site.domain}`);
+      setCurrentEventId(eventId);
+      setSelectorHelperOpen(true);
+    }
+  };
+
+  const closeSelectorHelper = () => {
+    setSelectorHelperOpen(false);
+    setCurrentEventId(null);
+    setSiteUrl('');
+  };
+
+  const handleSelectorSelected = (selector) => {
+    if (currentEventId) {
+      updateEvent(currentEventId, 'selector', selector);
+      setMessage({ type: 'success', text: `Selector copied: ${selector}` });
+      closeSelectorHelper();
     }
   };
 
@@ -203,21 +229,33 @@ export default function EventBuilder() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {event.type === 'pageview' ? 'URL Pattern' : 'CSS Selector'}
                     </label>
-                    <input
-                      type="text"
-                      value={event.selector}
-                      onChange={(e) => updateEvent(event.id, 'selector', e.target.value)}
-                      placeholder={
-                        event.type === 'pageview' 
-                          ? 'e.g., /thank-you or /checkout/*'
-                          : 'e.g., #contact-form or .cta-button'
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={event.selector}
+                        onChange={(e) => updateEvent(event.id, 'selector', e.target.value)}
+                        placeholder={
+                          event.type === 'pageview' 
+                            ? 'e.g., /thank-you or /checkout/*'
+                            : 'e.g., #contact-form or .cta-button'
+                        }
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      {event.type !== 'pageview' && (
+                        <button
+                          onClick={() => openSelectorHelper(event.id)}
+                          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                          type="button"
+                        >
+                          <Target className="w-4 h-4" />
+                          Selector Helper
+                        </button>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500 mt-1">
                       {event.type === 'pageview' 
                         ? 'Use * as wildcard. Example: /product/* matches all product pages'
-                        : 'Use browser DevTools to find selectors. Example: #myButton or button.submit'}
+                        : 'Use browser DevTools or click "Selector Helper" to find selectors. Example: #myButton or button.submit'}
                     </p>
                   </div>
                 </div>
@@ -250,6 +288,155 @@ export default function EventBuilder() {
           {saving ? 'Saving...' : 'Save Events'}
         </button>
       </div>
+
+      {/* CSS Selector Helper Modal */}
+      {selectorHelperOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">CSS Selector Helper</h3>
+                <p className="text-sm text-gray-600 mt-1">Click on any element on your website to get its CSS selector</p>
+              </div>
+              <button
+                onClick={closeSelectorHelper}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Instructions */}
+            <div className="p-4 bg-blue-50 border-b border-blue-200">
+              <p className="text-sm text-blue-800">
+                <strong>How to use:</strong> Hover over elements to highlight them, then click to select. The CSS selector will be automatically copied to your event.
+              </p>
+            </div>
+
+            {/* iframe */}
+            <div className="flex-1 overflow-hidden">
+              <SelectorHelperIframe 
+                url={siteUrl} 
+                onSelectorSelected={handleSelectorSelected}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+// Selector Helper iframe Component
+function SelectorHelperIframe({ url, onSelectorSelected }) {
+  const iframeRef = useRef(null);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const handleLoad = () => {
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        
+        // Inject selector detection script
+        const script = iframeDoc.createElement('script');
+        script.textContent = `
+          (function() {
+            let hoveredElement = null;
+            let overlay = null;
+
+            // Create overlay for highlighting
+            function createOverlay() {
+              overlay = document.createElement('div');
+              overlay.style.position = 'absolute';
+              overlay.style.border = '2px solid #9333EA';
+              overlay.style.backgroundColor = 'rgba(147, 51, 234, 0.1)';
+              overlay.style.pointerEvents = 'none';
+              overlay.style.zIndex = '999999';
+              overlay.style.display = 'none';
+              document.body.appendChild(overlay);
+            }
+
+            // Generate CSS selector for element
+            function getSelector(el) {
+              // Prefer ID
+              if (el.id) return '#' + el.id;
+              
+              // Try unique class
+              if (el.className && typeof el.className === 'string') {
+                const classes = el.className.trim().split(/\s+/).filter(c => c);
+                if (classes.length > 0) {
+                  const selector = el.tagName.toLowerCase() + '.' + classes.join('.');
+                  if (document.querySelectorAll(selector).length === 1) {
+                    return selector;
+                  }
+                }
+              }
+              
+              // Fallback to tag with nth-child
+              const parent = el.parentElement;
+              if (parent) {
+                const siblings = Array.from(parent.children).filter(e => e.tagName === el.tagName);
+                if (siblings.length > 1) {
+                  const index = siblings.indexOf(el) + 1;
+                  return el.tagName.toLowerCase() + ':nth-of-type(' + index + ')';
+                }
+              }
+              
+              return el.tagName.toLowerCase();
+            }
+
+            // Highlight element on hover
+            document.addEventListener('mouseover', function(e) {
+              hoveredElement = e.target;
+              const rect = hoveredElement.getBoundingClientRect();
+              overlay.style.display = 'block';
+              overlay.style.top = (rect.top + window.scrollY) + 'px';
+              overlay.style.left = (rect.left + window.scrollX) + 'px';
+              overlay.style.width = rect.width + 'px';
+              overlay.style.height = rect.height + 'px';
+            });
+
+            // Select element on click
+            document.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              const selector = getSelector(hoveredElement);
+              window.parent.postMessage({ type: 'SELECTOR_SELECTED', selector }, '*');
+            }, true);
+
+            createOverlay();
+          })();
+        `;
+        iframeDoc.body.appendChild(script);
+      } catch (error) {
+        console.error('Cannot inject script (CORS):', error);
+      }
+    };
+
+    iframe.addEventListener('load', handleLoad);
+    return () => iframe.removeEventListener('load', handleLoad);
+  }, []);
+
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data.type === 'SELECTOR_SELECTED') {
+        onSelectorSelected(event.data.selector);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onSelectorSelected]);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      src={url}
+      className="w-full h-full border-0"
+      title="Website Preview"
+    />
   );
 }
