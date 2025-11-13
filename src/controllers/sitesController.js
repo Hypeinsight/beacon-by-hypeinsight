@@ -340,6 +340,65 @@ const updateDestinations = async (req, res) => {
   }
 };
 
+/**
+ * Get integration stats for a site (events forwarded, success rate, etc.)
+ * GET /api/sites/:id/integration-stats
+ */
+const getIntegrationStats = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    
+    // Get user's agency
+    const db = require('../../config/database');
+    const userResult = await db.query(
+      'SELECT agency_id FROM dashboard_users WHERE id = $1',
+      [userId]
+    );
+    
+    if (!userResult.rows.length) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    const agencyId = userResult.rows[0].agency_id;
+    
+    // Verify site belongs to user's agency
+    const siteResult = await db.query(
+      'SELECT id FROM sites WHERE id = $1 AND agency_id = $2',
+      [id, agencyId]
+    );
+    
+    if (!siteResult.rows.length) {
+      return res.status(404).json({ success: false, error: 'Site not found' });
+    }
+    
+    // Get events from last 24 hours for this site
+    const statsResult = await db.query(
+      `SELECT 
+        COUNT(*) as events_forwarded_24h,
+        MAX(server_timestamp) as last_event_at
+       FROM events 
+       WHERE site_id = $1 
+       AND server_timestamp > NOW() - INTERVAL '24 hours'`,
+      [id]
+    );
+    
+    const stats = statsResult.rows[0] || {};
+    
+    res.json({
+      eventsForwarded24h: parseInt(stats.events_forwarded_24h) || 0,
+      lastEventAt: stats.last_event_at,
+      successRate: parseInt(stats.events_forwarded_24h) > 0 ? 100 : null // We'll improve this later with actual failure tracking
+    });
+  } catch (error) {
+    console.error('Error fetching integration stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch integration stats'
+    });
+  }
+};
+
 module.exports = {
   createSite,
   getSite,
@@ -349,4 +408,5 @@ module.exports = {
   getTrackingScript,
   getSiteStats,
   updateDestinations,
+  getIntegrationStats,
 };

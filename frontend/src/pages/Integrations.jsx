@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Save, CheckCircle, AlertCircle } from 'lucide-react';
+import { Settings, Save, CheckCircle, AlertCircle, Activity, Clock, TrendingUp } from 'lucide-react';
 import axios from '../lib/axios';
 
 export default function Integrations() {
@@ -24,6 +24,9 @@ export default function Integrations() {
   const [googleAdsEnabled, setGoogleAdsEnabled] = useState(false);
   const [googleAdsCustomerId, setGoogleAdsCustomerId] = useState('');
   const [googleAdsConversionId, setGoogleAdsConversionId] = useState('');
+  
+  // Integration stats
+  const [integrationStats, setIntegrationStats] = useState(null);
 
   useEffect(() => {
     loadSites();
@@ -32,7 +35,17 @@ export default function Integrations() {
   useEffect(() => {
     if (selectedSiteId) {
       loadSiteConfig();
+      loadIntegrationStats();
     }
+  }, [selectedSiteId]);
+  
+  // Reload stats every 30 seconds
+  useEffect(() => {
+    if (!selectedSiteId) return;
+    const interval = setInterval(() => {
+      loadIntegrationStats();
+    }, 30000);
+    return () => clearInterval(interval);
   }, [selectedSiteId]);
 
   const loadSites = async () => {
@@ -49,6 +62,15 @@ export default function Integrations() {
     }
   };
 
+  const loadIntegrationStats = async () => {
+    try {
+      const response = await axios.get(`/api/sites/${selectedSiteId}/integration-stats`);
+      setIntegrationStats(response.data);
+    } catch (error) {
+      console.error('Error loading integration stats:', error);
+    }
+  };
+  
   const loadSiteConfig = async () => {
     try {
       const site = sites.find(s => s.id === selectedSiteId);
@@ -123,6 +145,7 @@ export default function Integrations() {
       
       // Reload sites to get updated config
       await loadSites();
+      await loadIntegrationStats();
       
       setMessage({ type: 'success', text: 'Integration settings saved successfully!' });
     } catch (error) {
@@ -176,6 +199,43 @@ export default function Integrations() {
           <div className="flex items-center gap-2">
             {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
             {message.text}
+          </div>
+        </div>
+      )}
+
+      {/* Integration Stats */}
+      {integrationStats && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <Activity className="w-5 h-5 text-green-600" />
+              <div>
+                <p className="text-sm text-gray-600">Events Forwarded (24h)</p>
+                <p className="text-2xl font-bold text-gray-900">{integrationStats.eventsForwarded24h || 0}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-blue-600" />
+              <div>
+                <p className="text-sm text-gray-600">Last Event Sent</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {integrationStats.lastEventAt ? new Date(integrationStats.lastEventAt).toLocaleString() : 'Never'}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="w-5 h-5 text-purple-600" />
+              <div>
+                <p className="text-sm text-gray-600">Success Rate</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {integrationStats.successRate ? `${integrationStats.successRate}%` : 'N/A'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}

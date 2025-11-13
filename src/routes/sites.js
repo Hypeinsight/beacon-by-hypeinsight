@@ -83,4 +83,13 @@ router.get('/:id/stats', sitesController.getSiteStats);
  */
 router.put('/:id/destinations', verifyJWT, sitesController.updateDestinations);
 
+/**
+ * @route GET /api/sites/:id/integration-stats
+ * @desc Get integration statistics (events forwarded, success rate, etc.)
+ * @auth Required
+ * @param {string} id - Site ID
+ * @returns {object} Integration stats
+ */
+router.get('/:id/integration-stats', verifyJWT, sitesController.getIntegrationStats);
+
 module.exports = router;
