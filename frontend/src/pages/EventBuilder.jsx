@@ -317,7 +317,7 @@ export default function EventBuilder() {
               </p>
               <div className="flex gap-2 items-center">
                 <code className="flex-1 text-xs bg-white p-2 rounded border border-gray-300 overflow-x-auto">
-                  javascript:(function(){{const s=document.createElement('script');s.src='https://beacon-dashboard.onrender.com/selector-helper.js';document.body.appendChild(s);}})();
+                  {"javascript:(function(){const s=document.createElement('script');s.src='https://beacon-dashboard.onrender.com/selector-helper.js';document.body.appendChild(s);}})();"}
                 </code>
                 <button
                   onClick={() => {
