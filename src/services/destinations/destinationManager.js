@@ -23,16 +23,29 @@ const routeEvent = async (eventData, siteConfig) => {
     const allowedEvents = destinations.ga4.events || ['*'];
     const shouldForward = allowedEvents.includes('*') || allowedEvents.includes(eventData.event);
     
+    console.log('[GA4] Event check:', {
+      event: eventData.event,
+      allowedEvents,
+      shouldForward,
+      enabled: destinations.ga4.enabled
+    });
+    
     if (shouldForward) {
       try {
+        console.log('[GA4] Sending event to GA4:', eventData.event);
         await ga4Service.sendEvent(eventData, destinations.ga4);
         delivered++;
         results.ga4 = { success: true };
+        console.log('[GA4] Event sent successfully');
       } catch (error) {
         results.ga4 = { success: false, error: error.message };
-        console.error('GA4 delivery failed:', error);
+        console.error('[GA4] Delivery failed:', error.message);
       }
+    } else {
+      console.log('[GA4] Event not forwarded (filtered out)');
     }
+  } else {
+    console.log('[GA4] Not enabled or not configured');
   }
 
   // Meta
