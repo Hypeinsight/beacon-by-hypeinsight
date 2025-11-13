@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, Globe, Monitor, MapPin, Clock, MousePointer, FileText, Scroll, FormInput, ExternalLink, Building2, AlertCircle, User } from 'lucide-react';
-import axios from 'axios';
+import axios from '../lib/axios';
 
 export default function VisitorDetail() {
   const { clientId } = useParams();
@@ -15,8 +15,7 @@ export default function VisitorDetail() {
 
   const loadVisitorData = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const response = await axios.get(`${API_URL}/api/debug/events`);
+      const response = await axios.get('/api/debug/events');
       const events = response.data.events || [];
       
       // Find all events for this visitor
