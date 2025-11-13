@@ -21,10 +21,11 @@ const routeEvent = async (eventData, siteConfig) => {
   if (destinations.ga4 && destinations.ga4.enabled) {
     // Check if event should be forwarded
     const allowedEvents = destinations.ga4.events || ['*'];
-    const shouldForward = allowedEvents.includes('*') || allowedEvents.includes(eventData.event);
+    const eventName = eventData.event_name || eventData.event;
+    const shouldForward = allowedEvents.includes('*') || allowedEvents.includes(eventName);
     
     console.log('[GA4] Event check:', {
-      event: eventData.event,
+      event: eventData.event_name || eventData.event,
       allowedEvents,
       shouldForward,
       enabled: destinations.ga4.enabled
@@ -32,7 +33,7 @@ const routeEvent = async (eventData, siteConfig) => {
     
     if (shouldForward) {
       try {
-        console.log('[GA4] Sending event to GA4:', eventData.event);
+        console.log('[GA4] Sending event to GA4:', eventName);
         await ga4Service.sendEvent(eventData, destinations.ga4);
         delivered++;
         results.ga4 = { success: true };

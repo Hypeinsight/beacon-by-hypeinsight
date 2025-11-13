@@ -10,7 +10,7 @@ const GA4_ENDPOINT = 'https://www.google-analytics.com/mp/collect';
  */
 const mapEventToGA4 = (eventData) => {
   // Prefix event name with 'beacon_' to avoid conflicts with native GA4 tracking
-  const eventName = eventData.event || 'page_view';
+  const eventName = eventData.event_name || eventData.event || 'page_view';
   const ga4EventName = `beacon_${eventName}`;
   
   const params = {
