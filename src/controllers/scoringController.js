@@ -270,10 +270,74 @@ const getTopScoredVisitors = async (req, res) => {
   }
 };
 
+/**
+ * Get AI-suggested scores for detected events
+ * GET /api/sites/:siteId/ai-suggested-scores
+ */
+const getAISuggestedScores = async (req, res) => {
+  try {
+    const { siteId } = req.params;
+    const userId = req.user.id;
+    
+    // Verify site belongs to user's agency
+    const userResult = await db.query(
+      'SELECT agency_id FROM dashboard_users WHERE id = $1',
+      [userId]
+    );
+    
+    if (!userResult.rows.length) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    const agencyId = userResult.rows[0].agency_id;
+    
+    const siteResult = await db.query(
+      'SELECT id FROM sites WHERE id = $1 AND agency_id = $2',
+      [siteId, agencyId]
+    );
+    
+    if (!siteResult.rows.length) {
+      return res.status(404).json({ success: false, error: 'Site not found' });
+    }
+    
+    // Get detected events
+    const eventsResult = await db.query(
+      `SELECT DISTINCT event_name, COUNT(*) as event_count
+       FROM events 
+       WHERE site_id = $1
+       GROUP BY event_name
+       ORDER BY event_count DESC`,
+      [siteId]
+    );
+    
+    // Calculate AI scores for each event
+    const suggestions = eventsResult.rows.map(row => {
+      const aiScore = scoringService.calculateAIScore(row.event_name);
+      return {
+        eventName: row.event_name,
+        suggestedScore: aiScore,
+        eventCount: parseInt(row.event_count)
+      };
+    });
+    
+    res.json({
+      success: true,
+      data: suggestions
+    });
+  } catch (error) {
+    console.error('Error getting AI suggested scores:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get AI suggested scores'
+    });
+  }
+};
+
 module.exports = {
   getScoringRules,
   updateScoringRules,
   deleteScoringRule,
   getVisitorScore,
   getTopScoredVisitors,
+  getAISuggestedScores,
 };

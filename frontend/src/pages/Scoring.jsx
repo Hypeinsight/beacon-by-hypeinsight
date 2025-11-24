@@ -56,17 +56,35 @@ export default function Scoring() {
     if (!selectedSiteId) return;
     
     try {
+      // Load existing rules
       const response = await axios.get(`/api/sites/${selectedSiteId}/scoring-rules`);
       const rules = response.data.data || [];
       
-      // Convert to map for easier lookup
+      // Load AI suggestions
+      const aiResponse = await axios.get(`/api/sites/${selectedSiteId}/ai-suggested-scores`);
+      const aiSuggestions = aiResponse.data.data || [];
+      
+      // Convert to map, prefer existing rules over AI suggestions
       const rulesMap = {};
+      
+      // First, add AI suggestions as defaults
+      aiSuggestions.forEach(suggestion => {
+        rulesMap[suggestion.eventName] = {
+          scoreValue: suggestion.suggestedScore,
+          description: 'AI-suggested score',
+          active: true,
+          isAISuggested: true
+        };
+      });
+      
+      // Then override with actual saved rules
       rules.forEach(rule => {
         rulesMap[rule.event_name] = {
           id: rule.id,
           scoreValue: rule.score_value,
           description: rule.description || '',
-          active: rule.active
+          active: rule.active,
+          isAISuggested: false
         };
       });
       
@@ -165,12 +183,13 @@ export default function Scoring() {
 
       {/* Info Box */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-semibold text-blue-900 mb-2">How Visitor Scoring Works</h3>
+        <h3 className="font-semibold text-blue-900 mb-2">🤖 AI-Powered Visitor Scoring</h3>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>• <strong>Assign scores:</strong> Give point values to different events (e.g., form_submit = 10 points)</li>
-          <li>• <strong>Track engagement:</strong> Beacon automatically calculates visitor scores as they interact</li>
-          <li>• <strong>Identify hot leads:</strong> High-scoring visitors are your most engaged prospects</li>
-          <li>• <strong>Flexible scoring:</strong> Use positive scores for valuable actions, negative for undesired behavior</li>
+          <li>• <strong>Automatic scoring:</strong> AI analyzes event names and assigns intelligent scores automatically</li>
+          <li>• <strong>Smart detection:</strong> High-value events (purchases, signups) get higher scores than page views</li>
+          <li>• <strong>Real-time updates:</strong> Visitor scores update automatically as they interact with your site</li>
+          <li>• <strong>Customizable:</strong> You can adjust AI-suggested scores to match your business priorities</li>
+          <li>• <strong>Example:</strong> purchase (25pts), signup (20pts), form_submit (15pts), click (3pts), page_view (1pt)</li>
         </ul>
       </div>
 
@@ -191,10 +210,10 @@ export default function Scoring() {
         ) : (
           <div className="space-y-3">
             {detectedEvents.map((event) => {
-              const rule = scoringRules[event.name] || { scoreValue: 0, description: '', active: true };
+              const rule = scoringRules[event.name] || { scoreValue: 0, description: '', active: true, isAISuggested: true };
               
               return (
-                <div key={event.name} className="border border-gray-200 rounded-lg p-4">
+                <div key={event.name} className="border border-gray-200 rounded-lg p-4 hover:border-green-300 transition-colors">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                     {/* Event Name */}
                     <div className="md:col-span-4">
@@ -205,8 +224,15 @@ export default function Scoring() {
                           onChange={(e) => updateEventScore(event.name, 'active', e.target.checked)}
                           className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                         />
-                        <div>
-                          <p className="font-medium text-gray-900">{event.name}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-900">{event.name}</p>
+                            {rule.isAISuggested && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                🤖 AI
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-gray-500">{event.count.toLocaleString()} occurrences</p>
                         </div>
                       </div>
@@ -214,13 +240,16 @@ export default function Scoring() {
 
                     {/* Score Value */}
                     <div className="md:col-span-2">
-                      <input
-                        type="number"
-                        value={rule.scoreValue || ''}
-                        onChange={(e) => updateEventScore(event.name, 'scoreValue', e.target.value)}
-                        placeholder="0"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-center font-semibold"
-                      />
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={rule.scoreValue || ''}
+                          onChange={(e) => updateEventScore(event.name, 'scoreValue', e.target.value)}
+                          placeholder="0"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-center font-semibold"
+                        />
+                        <div className="text-xs text-center text-gray-500 mt-1">points</div>
+                      </div>
                     </div>
 
                     {/* Description */}
@@ -229,7 +258,7 @@ export default function Scoring() {
                         type="text"
                         value={rule.description || ''}
                         onChange={(e) => updateEventScore(event.name, 'description', e.target.value)}
-                        placeholder="Optional description..."
+                        placeholder={rule.isAISuggested ? 'AI-suggested score - edit to customize' : 'Optional description...'}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       />
                     </div>

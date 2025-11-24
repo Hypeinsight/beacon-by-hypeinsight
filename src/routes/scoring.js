@@ -57,4 +57,13 @@ router.get('/sites/:siteId/visitors/:clientId/score', verifyJWT, scoringControll
  */
 router.get('/sites/:siteId/top-scored-visitors', verifyJWT, scoringController.getTopScoredVisitors);
 
+/**
+ * @route GET /api/sites/:siteId/ai-suggested-scores
+ * @desc Get AI-suggested scores for detected events
+ * @auth Required
+ * @param {string} siteId - Site ID
+ * @returns {array} AI-suggested scores for each event
+ */
+router.get('/sites/:siteId/ai-suggested-scores', verifyJWT, scoringController.getAISuggestedScores);
+
 module.exports = router;
