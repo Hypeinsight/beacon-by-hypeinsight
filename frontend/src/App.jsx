@@ -6,6 +6,7 @@ import Overview from './pages/Overview';
 import Visitors from './pages/Visitors';
 import VisitorDetail from './pages/VisitorDetail';
 import Companies from './pages/Companies';
+import Scoring from './pages/Scoring';
 import Setup from './pages/Setup';
 import Integrations from './pages/Integrations';
 import EventBuilder from './pages/EventBuilder';
@@ -50,6 +51,7 @@ function App() {
             <Route path="visitors" element={<Visitors />} />
             <Route path="visitors/:clientId" element={<VisitorDetail />} />
             <Route path="companies" element={<Companies />} />
+            <Route path="scoring" element={<Scoring />} />
             <Route path="setup" element={<Setup />} />
             <Route path="integrations" element={<Integrations />} />
             <Route path="event-builder" element={<EventBuilder />} />

@@ -110,4 +110,13 @@ router.put('/:id/custom-events', verifyJWT, sitesController.updateCustomEvents);
  */
 router.get('/script/:scriptId/custom-events', sitesController.getCustomEventsByScriptId);
 
+/**
+ * @route GET /api/sites/:id/detected-events
+ * @desc Get detected event types for a site
+ * @auth Required
+ * @param {string} id - Site ID
+ * @returns {object} Array of detected events with counts
+ */
+router.get('/:id/detected-events', verifyJWT, sitesController.getDetectedEvents);
+
 module.exports = router;

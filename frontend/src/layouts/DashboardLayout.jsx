@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Building2, Settings, LogOut, Zap, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, Settings, LogOut, Zap, Sparkles, Award } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function DashboardLayout() {
@@ -10,6 +10,7 @@ export default function DashboardLayout() {
     { name: 'Overview', href: '/overview', icon: LayoutDashboard },
     { name: 'Visitors', href: '/visitors', icon: Users },
     { name: 'Companies', href: '/companies', icon: Building2 },
+    { name: 'Scoring', href: '/scoring', icon: Award },
     { name: 'Event Builder', href: '/event-builder', icon: Sparkles },
     { name: 'Integrations', href: '/integrations', icon: Zap },
     { name: 'Setup', href: '/setup', icon: Settings },

@@ -487,6 +487,66 @@ const getCustomEventsByScriptId = async (req, res) => {
   }
 };
 
+/**
+ * Get detected event types for a site
+ * GET /api/sites/:id/detected-events
+ */
+const getDetectedEvents = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    
+    // Get user's agency
+    const db = require('../../config/database');
+    const userResult = await db.query(
+      'SELECT agency_id FROM dashboard_users WHERE id = $1',
+      [userId]
+    );
+    
+    if (!userResult.rows.length) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    const agencyId = userResult.rows[0].agency_id;
+    
+    // Verify site belongs to user's agency
+    const siteResult = await db.query(
+      'SELECT id FROM sites WHERE id = $1 AND agency_id = $2',
+      [id, agencyId]
+    );
+    
+    if (!siteResult.rows.length) {
+      return res.status(404).json({ success: false, error: 'Site not found' });
+    }
+    
+    // Get distinct event names for this site
+    const eventsResult = await db.query(
+      `SELECT DISTINCT event_name, COUNT(*) as event_count
+       FROM events 
+       WHERE site_id = $1
+       GROUP BY event_name
+       ORDER BY event_count DESC, event_name ASC`,
+      [id]
+    );
+    
+    const detectedEvents = eventsResult.rows.map(row => ({
+      name: row.event_name,
+      count: parseInt(row.event_count)
+    }));
+    
+    res.json({
+      success: true,
+      data: detectedEvents
+    });
+  } catch (error) {
+    console.error('Error fetching detected events:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch detected events'
+    });
+  }
+};
+
 module.exports = {
   createSite,
   getSite,
@@ -499,4 +559,5 @@ module.exports = {
   getIntegrationStats,
   updateCustomEvents,
   getCustomEventsByScriptId,
+  getDetectedEvents,
 };

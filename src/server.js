@@ -21,6 +21,7 @@ const usersRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
 const companiesRoutes = require('./routes/companies');
 const analyticsRoutes = require('./routes/analytics');
+const scoringRoutes = require('./routes/scoring');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -123,6 +124,7 @@ app.use('/api/track', trackingRoutes);
 app.use('/api/sites', sitesRoutes);
 app.use('/api/agencies', agenciesRoutes);
 app.use('/api/debug', debugRoutes);
+app.use('/api', scoringRoutes);
 
 // 404 handler
 app.use((req, res) => {

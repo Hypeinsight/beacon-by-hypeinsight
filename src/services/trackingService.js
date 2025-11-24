@@ -11,6 +11,7 @@ const { v4: uuidv4 } = require('uuid');
 const { enrichIP } = require('./ipEnrichmentService');
 const { parseUserAgent } = require('../utils/userAgentParser');
 const destinationManager = require('./destinations/destinationManager');
+const scoringService = require('./scoringService');
 
 /**
  * Look up site UUID from script_id
@@ -233,6 +234,20 @@ const saveEvent = async (eventData) => {
     }
   }
   
+  // Update visitor score based on event (async, non-blocking)
+  if (e.site_id && e.client_id && e.event_name) {
+    scoringService.updateVisitorScore(
+      e.site_id,
+      e.client_id,
+      e.session_id,
+      e.event_name,
+      e.event_id
+    ).catch(err => {
+      console.error('Error updating visitor score:', err);
+      // Don't fail tracking if scoring fails
+    });
+  }
+  
   return result.rows[0];
 };
 
@@ -298,6 +313,23 @@ const saveBatchEvents = async (events, ipAddress, userAgent) => {
           console.error('Error marking site as connected:', err);
         }
       }
+      
+      // Update visitor scores for all events (async, non-blocking after commit)
+      setImmediate(() => {
+        for (const e of normalizedEvents) {
+          if (e.site_id && e.client_id && e.event_name) {
+            scoringService.updateVisitorScore(
+              e.site_id,
+              e.client_id,
+              e.session_id,
+              e.event_name,
+              e.event_id
+            ).catch(err => {
+              console.error('Error updating visitor score for batch event:', err);
+            });
+          }
+        }
+      });
       
     await client.query('COMMIT');
     return results;

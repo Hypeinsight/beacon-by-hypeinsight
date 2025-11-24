@@ -14,6 +14,8 @@ export default function Integrations() {
   const [ga4MeasurementId, setGa4MeasurementId] = useState('');
   const [ga4ApiSecret, setGa4ApiSecret] = useState('');
   const [ga4Events, setGa4Events] = useState(['page_view']);
+  const [detectedEvents, setDetectedEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
   
   // Meta Config
   const [metaEnabled, setMetaEnabled] = useState(false);
@@ -32,6 +34,7 @@ export default function Integrations() {
   useEffect(() => {
     if (selectedSiteId) {
       loadSiteConfig();
+      loadDetectedEvents();
     }
   }, [selectedSiteId]);
 
@@ -93,6 +96,44 @@ export default function Integrations() {
     } catch (error) {
       console.error('Error loading site config:', error);
     }
+  };
+
+  const loadDetectedEvents = async () => {
+    if (!selectedSiteId) return;
+    
+    setLoadingEvents(true);
+    try {
+      const response = await axios.get(`/api/sites/${selectedSiteId}/detected-events`);
+      setDetectedEvents(response.data.data || []);
+    } catch (error) {
+      console.error('Error loading detected events:', error);
+      setDetectedEvents([]);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  const toggleEventSelection = (eventName) => {
+    if (ga4Events.includes('*')) {
+      // If "all events" is selected, switch to selecting individual events
+      setGa4Events(detectedEvents.map(e => e.name).filter(name => name !== eventName));
+    } else if (ga4Events.includes(eventName)) {
+      setGa4Events(ga4Events.filter(name => name !== eventName));
+    } else {
+      setGa4Events([...ga4Events, eventName]);
+    }
+  };
+
+  const selectAllEvents = () => {
+    setGa4Events(['*']);
+  };
+
+  const deselectAllEvents = () => {
+    setGa4Events([]);
+  };
+
+  const isEventSelected = (eventName) => {
+    return ga4Events.includes('*') || ga4Events.includes(eventName);
   };
 
   const saveConfig = async () => {
@@ -224,28 +265,55 @@ export default function Integrations() {
               <p className="text-xs text-gray-500 mt-1">Found in GA4 Admin → Data Streams → Measurement Protocol API secrets</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Event Forwarding</label>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    checked={ga4Events.includes('*')}
-                    onChange={() => setGa4Events(['*'])}
-                    className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Forward all events</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    checked={ga4Events.includes('page_view') && !ga4Events.includes('*')}
-                    onChange={() => setGa4Events(['page_view'])}
-                    className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Only page views</span>
-                </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">Event Forwarding</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={selectAllEvents}
+                    className="text-xs px-2 py-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={deselectAllEvents}
+                    className="text-xs px-2 py-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                  >
+                    Deselect All
+                  </button>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Events are prefixed with 'beacon_' in GA4 (e.g., beacon_page_view) to avoid conflicts with existing GA4 tracking.</p>
+              
+              {loadingEvents ? (
+                <div className="text-sm text-gray-500 py-4">Loading detected events...</div>
+              ) : detectedEvents.length === 0 ? (
+                <div className="text-sm text-gray-500 py-4">No events detected yet. Events will appear here once tracking starts.</div>
+              ) : (
+                <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-2">
+                  {detectedEvents.map((event) => (
+                    <label key={event.name} className="flex items-center justify-between hover:bg-gray-50 p-2 rounded cursor-pointer">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={isEventSelected(event.name)}
+                          onChange={() => toggleEventSelection(event.name)}
+                          className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                        />
+                        <span className="ml-3 text-sm text-gray-700">{event.name}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">{event.count.toLocaleString()} events</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              
+              <p className="text-xs text-gray-500 mt-2">
+                {ga4Events.includes('*') 
+                  ? 'All events will be forwarded to GA4.' 
+                  : `${ga4Events.length} event${ga4Events.length !== 1 ? 's' : ''} selected.`
+                } Events are prefixed with 'beacon_' in GA4 to avoid conflicts.
+              </p>
             </div>
           </div>
         )}
