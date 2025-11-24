@@ -7,8 +7,11 @@ const googleAdsService = require('./googleAdsService');
 
 /**
  * Send event to all configured destinations
+ * @param {object} eventData - Normalized event data
+ * @param {object} siteConfig - Site configuration including destinations
+ * @param {object} agencyConfig - Agency-level configuration (optional)
  */
-const routeEvent = async (eventData, siteConfig) => {
+const routeEvent = async (eventData, siteConfig, agencyConfig = null) => {
   if (!siteConfig || !siteConfig.destinations) {
     return { success: true, delivered: 0 };
   }
@@ -52,12 +55,13 @@ const routeEvent = async (eventData, siteConfig) => {
   // Meta
   if (destinations.meta && destinations.meta.enabled) {
     try {
-      await metaService.sendEvent(eventData, destinations.meta);
+      await metaService.sendEvent(eventData, destinations.meta, agencyConfig);
       delivered++;
       results.meta = { success: true };
+      console.log('[Meta] Event sent successfully');
     } catch (error) {
       results.meta = { success: false, error: error.message };
-      console.error('Meta delivery failed:', error);
+      console.error('[Meta] Delivery failed:', error.message);
     }
   }
 

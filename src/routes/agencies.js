@@ -7,6 +7,8 @@
 const express = require('express');
 const router = express.Router();
 const agenciesController = require('../controllers/agenciesController');
+const agencySettingsController = require('../controllers/agencySettingsController');
+const { verifyJWT } = require('../middleware/authMiddleware');
 
 /**
  * @route POST /api/agencies
@@ -64,5 +66,34 @@ router.post('/:id/regenerate-key', agenciesController.regenerateApiKey);
  * @returns {object} Agency statistics (site count, event count)
  */
 router.get('/:id/stats', agenciesController.getAgencyStats);
+
+/**
+ * Agency Settings Routes (authenticated)
+ */
+
+/**
+ * @route GET /api/agencies/settings
+ * @desc Get agency settings including Meta System User token status
+ * @auth Required
+ * @returns {object} Agency settings
+ */
+router.get('/settings', verifyJWT, agencySettingsController.getAgencySettings);
+
+/**
+ * @route PUT /api/agencies/settings/meta-token
+ * @desc Update agency Meta System User token
+ * @auth Required
+ * @body {systemUserToken}
+ * @returns {object} Success message
+ */
+router.put('/settings/meta-token', verifyJWT, agencySettingsController.updateMetaSystemUserToken);
+
+/**
+ * @route DELETE /api/agencies/settings/meta-token
+ * @desc Delete agency Meta System User token
+ * @auth Required
+ * @returns {object} Success message
+ */
+router.delete('/settings/meta-token', verifyJWT, agencySettingsController.deleteMetaSystemUserToken);
 
 module.exports = router;

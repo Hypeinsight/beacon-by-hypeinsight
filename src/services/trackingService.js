@@ -222,7 +222,21 @@ const saveEvent = async (eventData) => {
       // Forward event to configured destinations (GA4, Meta, Google Ads)
       if (siteCheck.rows.length && siteCheck.rows[0].config) {
         try {
-          await destinationManager.routeEvent(e, siteCheck.rows[0].config);
+          // Get agency config for System User tokens
+          let agencyConfig = null;
+          try {
+            const agencyResult = await db.query(
+              'SELECT config FROM agencies WHERE id = (SELECT agency_id FROM sites WHERE id = $1)',
+              [e.site_id]
+            );
+            if (agencyResult.rows.length > 0) {
+              agencyConfig = agencyResult.rows[0].config;
+            }
+          } catch (agencyErr) {
+            console.error('Error fetching agency config:', agencyErr);
+          }
+          
+          await destinationManager.routeEvent(e, siteCheck.rows[0].config, agencyConfig);
         } catch (destErr) {
           console.error('Destination forwarding failed:', destErr);
           // Don't fail tracking if destination fails
@@ -298,11 +312,26 @@ const saveBatchEvents = async (events, ipAddress, userAgent) => {
           // Forward events to configured destinations (GA4, Meta, Google Ads)
           if (siteCheck.rows.length && siteCheck.rows[0].config) {
             const siteConfig = siteCheck.rows[0].config;
+            
+            // Get agency config for System User tokens
+            let agencyConfig = null;
+            try {
+              const agencyResult = await client.query(
+                'SELECT config FROM agencies WHERE id = (SELECT agency_id FROM sites WHERE id = $1)',
+                [siteId]
+              );
+              if (agencyResult.rows.length > 0) {
+                agencyConfig = agencyResult.rows[0].config;
+              }
+            } catch (agencyErr) {
+              console.error('Error fetching agency config:', agencyErr);
+            }
+            
             // Forward each event for this site
             for (const normalizedEvent of normalizedEvents) {
               if (normalizedEvent.site_id === siteId) {
                 try {
-                  await destinationManager.routeEvent(normalizedEvent, siteConfig);
+                  await destinationManager.routeEvent(normalizedEvent, siteConfig, agencyConfig);
                 } catch (destErr) {
                   console.error('Destination forwarding failed for batch event:', destErr);
                 }

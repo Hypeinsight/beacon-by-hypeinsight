@@ -55,10 +55,25 @@ const mapEventToMeta = (eventData) => {
 
 /**
  * Send event to Meta
+ * Supports both site-level tokens and agency-level System User tokens
+ * Priority: site-level token → agency-level token
  */
-const sendEvent = async (eventData, config) => {
-  if (!config.pixelId || !config.accessToken) {
-    throw new Error('Meta pixel ID and access token required');
+const sendEvent = async (eventData, config, agencyConfig = null) => {
+  if (!config.pixelId) {
+    throw new Error('Meta pixel ID required');
+  }
+
+  // Determine which access token to use
+  // Priority: site-level token > agency-level System User token
+  let accessToken = config.accessToken;
+  
+  if (!accessToken && agencyConfig?.meta?.systemUserToken) {
+    accessToken = agencyConfig.meta.systemUserToken;
+    console.log('[Meta] Using agency-level System User token');
+  }
+  
+  if (!accessToken) {
+    throw new Error('Meta access token required (either site-level or agency System User token)');
   }
 
   const payload = mapEventToMeta(eventData);
@@ -70,7 +85,7 @@ const sendEvent = async (eventData, config) => {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.accessToken}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         timeout: 5000,
       }
