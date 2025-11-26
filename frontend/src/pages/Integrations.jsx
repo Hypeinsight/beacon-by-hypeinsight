@@ -19,8 +19,9 @@ export default function Integrations() {
   
   // Meta Config
   const [metaEnabled, setMetaEnabled] = useState(false);
-  const [metaPixelId, setMetaPixelId] = useState('');
+  const [metaDatasetId, setMetaDatasetId] = useState('');
   const [metaAccessToken, setMetaAccessToken] = useState('');
+  const [metaActionSource, setMetaActionSource] = useState('website');
   
   // Google Ads Config
   const [googleAdsEnabled, setGoogleAdsEnabled] = useState(false);
@@ -62,8 +63,9 @@ export default function Integrations() {
       setGa4ApiSecret('');
       setGa4Events(['page_view']);
       setMetaEnabled(false);
-      setMetaPixelId('');
+      setMetaDatasetId('');
       setMetaAccessToken('');
+      setMetaActionSource('website');
       setGoogleAdsEnabled(false);
       setGoogleAdsCustomerId('');
       setGoogleAdsConversionId('');
@@ -82,8 +84,9 @@ export default function Integrations() {
         // Meta
         if (destinations.meta) {
           setMetaEnabled(destinations.meta.enabled || false);
-          setMetaPixelId(destinations.meta.pixelId || '');
+          setMetaDatasetId(destinations.meta.datasetId || destinations.meta.pixelId || '');
           setMetaAccessToken(destinations.meta.accessToken || '');
+          setMetaActionSource(destinations.meta.actionSource || 'website');
         }
         
         // Google Ads
@@ -150,8 +153,10 @@ export default function Integrations() {
         },
         meta: {
           enabled: metaEnabled,
-          pixelId: metaPixelId,
-          accessToken: metaAccessToken
+          datasetId: metaDatasetId,
+          pixelId: metaDatasetId, // Keep pixelId for backward compatibility
+          accessToken: metaAccessToken,
+          actionSource: metaActionSource
         },
         googleAds: {
           enabled: googleAdsEnabled,
@@ -323,8 +328,8 @@ export default function Integrations() {
       <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Meta (Facebook) Pixel</h3>
-            <p className="text-sm text-gray-600">Send events to Facebook/Instagram Ads via Conversions API</p>
+            <h3 className="text-lg font-semibold text-gray-900">Meta Conversions API</h3>
+            <p className="text-sm text-gray-600">Send events to Facebook/Instagram Ads via Datasets</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
@@ -340,26 +345,45 @@ export default function Integrations() {
         {metaEnabled && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Pixel ID</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dataset ID</label>
               <input
                 type="text"
-                value={metaPixelId}
-                onChange={(e) => setMetaPixelId(e.target.value)}
+                value={metaDatasetId}
+                onChange={(e) => setMetaDatasetId(e.target.value)}
                 placeholder="123456789012345"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
-              <p className="text-xs text-gray-500 mt-1">Found in Meta Events Manager</p>
+              <p className="text-xs text-gray-500 mt-1">Found in Meta Events Manager → Data Sources. In most cases, Dataset ID = Pixel ID.</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Access Token</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Action Source</label>
+              <select
+                value={metaActionSource}
+                onChange={(e) => setMetaActionSource(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="website">Website</option>
+                <option value="app">Mobile App</option>
+                <option value="offline">Offline (Store/Phone)</option>
+                <option value="email">Email</option>
+                <option value="chat">Chat</option>
+                <option value="phone_call">Phone Call</option>
+                <option value="physical_store">Physical Store</option>
+                <option value="system_generated">System Generated</option>
+                <option value="other">Other</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Where the conversion event occurred. Select 'Website' for online tracking, 'Offline' for in-store/phone events.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Access Token (Optional)</label>
               <input
                 type="password"
                 value={metaAccessToken}
                 onChange={(e) => setMetaAccessToken(e.target.value)}
-                placeholder="Enter Access Token"
+                placeholder="Leave blank to use agency System User token"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
-              <p className="text-xs text-gray-500 mt-1">Generate in Meta Events Manager → Settings → Conversions API</p>
+              <p className="text-xs text-gray-500 mt-1">Generate in Meta Events Manager → Settings → Conversions API. Leave blank to use agency-level System User token.</p>
             </div>
           </div>
         )}

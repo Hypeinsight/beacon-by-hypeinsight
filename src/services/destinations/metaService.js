@@ -17,13 +17,13 @@ const hashPII = (value) => {
 /**
  * Map event data to Meta format
  */
-const mapEventToMeta = (eventData) => {
+const mapEventToMeta = (eventData, actionSource = 'website') => {
   return {
     data: [
       {
         event_name: eventData.event === 'page_view' ? 'PageView' : eventData.event,
         event_time: Math.floor(eventData.timestamp / 1000),
-        action_source: 'website',
+        action_source: actionSource,
         event_id: eventData.eventId,
         user_data: {
           // Hashed PII for enhanced matching
@@ -59,8 +59,11 @@ const mapEventToMeta = (eventData) => {
  * Priority: site-level token → agency-level token
  */
 const sendEvent = async (eventData, config, agencyConfig = null) => {
-  if (!config.pixelId) {
-    throw new Error('Meta pixel ID required');
+  // Support both datasetId and pixelId for backward compatibility
+  const datasetId = config.datasetId || config.pixelId;
+  
+  if (!datasetId) {
+    throw new Error('Meta Dataset ID (or Pixel ID) required');
   }
 
   // Determine which access token to use
@@ -76,11 +79,13 @@ const sendEvent = async (eventData, config, agencyConfig = null) => {
     throw new Error('Meta access token required (either site-level or agency System User token)');
   }
 
-  const payload = mapEventToMeta(eventData);
+  // Use configured action_source or default to 'website'
+  const actionSource = config.actionSource || 'website';
+  const payload = mapEventToMeta(eventData, actionSource);
 
   try {
     await axios.post(
-      `${META_ENDPOINT}/${config.pixelId}/events`,
+      `${META_ENDPOINT}/${datasetId}/events`,
       payload,
       {
         headers: {
