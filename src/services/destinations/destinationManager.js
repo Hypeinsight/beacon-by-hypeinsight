@@ -20,6 +20,11 @@ const routeEvent = async (eventData, siteConfig, agencyConfig = null) => {
   let delivered = 0;
   const results = {};
 
+  // DEBUG: Log entire config to see what's actually there
+  console.log('[DEBUG] Full siteConfig:', JSON.stringify(siteConfig, null, 2));
+  console.log('[DEBUG] destinations.meta exists?', !!destinations?.meta);
+  console.log('[DEBUG] destinations.meta.enabled?', destinations?.meta?.enabled);
+
   // GA4
   if (destinations.ga4 && destinations.ga4.enabled) {
     // Check if event should be forwarded
@@ -54,14 +59,31 @@ const routeEvent = async (eventData, siteConfig, agencyConfig = null) => {
 
   // Meta
   if (destinations.meta && destinations.meta.enabled) {
-    try {
-      await metaService.sendEvent(eventData, destinations.meta, agencyConfig);
-      delivered++;
-      results.meta = { success: true };
-      console.log('[Meta] Event sent successfully');
-    } catch (error) {
-      results.meta = { success: false, error: error.message };
-      console.error('[Meta] Delivery failed:', error.message);
+    // Check if event should be forwarded (same as GA4)
+    const allowedEvents = destinations.meta.events || ['*'];
+    const eventName = eventData.event_name || eventData.event;
+    const shouldForward = allowedEvents.includes('*') || allowedEvents.includes(eventName);
+    
+    console.log('[Meta] Event check:', {
+      event: eventData.event_name || eventData.event,
+      allowedEvents,
+      shouldForward,
+      enabled: destinations.meta.enabled
+    });
+    
+    if (shouldForward) {
+      try {
+        console.log('[Meta] Sending event to Meta:', eventName);
+        await metaService.sendEvent(eventData, destinations.meta, agencyConfig);
+        delivered++;
+        results.meta = { success: true };
+        console.log('[Meta] Event sent successfully');
+      } catch (error) {
+        results.meta = { success: false, error: error.message };
+        console.error('[Meta] Delivery failed:', error.message);
+      }
+    } else {
+      console.log('[Meta] Event not forwarded (filtered out)');
     }
   }
 
