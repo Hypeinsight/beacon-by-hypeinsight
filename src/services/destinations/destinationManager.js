@@ -1,9 +1,12 @@
 /**
  * Destination Manager: route events to configured platforms
+ * DEPLOYED: 2025-11-30 01:58 UTC
  */
 const ga4Service = require('./ga4Service');
 const metaService = require('./metaService');
 const googleAdsService = require('./googleAdsService');
+
+console.log('[Destination Manager] Loaded - Version 2025-11-30 01:58 UTC');
 
 /**
  * Send event to all configured destinations
