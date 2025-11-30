@@ -382,7 +382,10 @@ export default function Integrations() {
                 </div>
                 <div>
                   <strong className="block text-blue-900">Step 2: Generate Access Token</strong>
-                  <p className="ml-4 mt-1">In Events Manager → Settings → Conversions API → Click "Generate Access Token" and copy it</p>
+                  <p className="ml-4 mt-1">In Events Manager → Settings → Conversions API → Click "Generate Access Token"</p>
+                  <p className="ml-4 mt-1">Choose "Set up without Dataset Quality API" (simpler) or "Set up with Dataset Quality API" (advanced)</p>
+                  <p className="ml-4 mt-1">Click "Generate access token" and copy it</p>
+                  <p className="ml-4 mt-1 text-xs italic">Note: "Without" works perfectly fine - you can always upgrade later</p>
                 </div>
                 <div>
                   <strong className="block text-blue-900">Step 3: Select Action Source</strong>
