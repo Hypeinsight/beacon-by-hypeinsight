@@ -383,7 +383,6 @@ export default function Integrations() {
                 <div>
                   <strong className="block text-blue-900">Step 2: Generate Access Token</strong>
                   <p className="ml-4 mt-1">In Events Manager → Settings → Conversions API → Click "Generate Access Token" and copy it</p>
-                  <p className="ml-4 mt-1 text-xs italic">OR use agency System User token (recommended for agencies managing multiple clients)</p>
                 </div>
                 <div>
                   <strong className="block text-blue-900">Step 3: Select Action Source</strong>
@@ -432,15 +431,15 @@ export default function Integrations() {
               <p className="text-xs text-gray-500 mt-1">Where the conversion event occurred. Select 'Website' for online tracking, 'Offline' for in-store/phone events.</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Access Token (Optional)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Access Token</label>
               <input
                 type="password"
                 value={metaAccessToken}
                 onChange={(e) => setMetaAccessToken(e.target.value)}
-                placeholder="Leave blank to use agency System User token"
+                placeholder="Enter your Meta access token"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
-              <p className="text-xs text-gray-500 mt-1">Generate in Meta Events Manager → Settings → Conversions API. Leave blank to use agency-level System User token.</p>
+              <p className="text-xs text-gray-500 mt-1">Generate in Meta Events Manager → Settings → Conversions API → Generate Access Token</p>
             </div>
             
             {/* Event Selection */}
