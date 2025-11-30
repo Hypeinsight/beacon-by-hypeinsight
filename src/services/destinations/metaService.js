@@ -18,29 +18,36 @@ const hashPII = (value) => {
  * Map event data to Meta format
  */
 const mapEventToMeta = (eventData, actionSource = 'website') => {
+  // Map event name to Meta format
+  const eventName = eventData.event_name || eventData.event;
+  const metaEventName = eventName === 'page_view' ? 'PageView' : eventName;
+  
+  // Convert timestamp (milliseconds) to Unix timestamp (seconds)
+  const eventTime = Math.floor((eventData.event_timestamp || eventData.timestamp || Date.now()) / 1000);
+  
   return {
     data: [
       {
-        event_name: eventData.event === 'page_view' ? 'PageView' : eventData.event,
-        event_time: Math.floor(eventData.timestamp / 1000),
+        event_name: metaEventName,
+        event_time: eventTime,
         action_source: actionSource,
-        event_id: eventData.eventId,
+        event_id: eventData.event_id || eventData.eventId,
         user_data: {
           // Hashed PII for enhanced matching
-          em: eventData.email_hash,
-          ph: eventData.phone_hash,
-          fn: eventData.first_name_hash,
-          ln: eventData.last_name_hash,
+          em: eventData.email_hash || null,
+          ph: eventData.phone_hash || null,
+          fn: eventData.first_name_hash || null,
+          ln: eventData.last_name_hash || null,
           // Device info
-          client_ip_address: eventData.ip_address,
-          client_user_agent: eventData.user_agent,
+          client_ip_address: eventData.ip_address || null,
+          client_user_agent: eventData.user_agent || null,
           fbc: eventData.fbclid ? `fb.1.${Date.now()}.${eventData.fbclid}` : null,
-          fbp: `fb.1.${Date.now()}.${eventData.clientId}`,
+          fbp: eventData.client_id ? `fb.1.${Date.now()}.${eventData.client_id}` : null,
         },
         custom_data: {
-          value: eventData.properties?.value,
+          value: eventData.properties?.value || null,
           currency: eventData.properties?.currency || 'USD',
-          content_name: eventData.page_title,
+          content_name: eventData.page_title || null,
           content_type: 'product',
         },
         ...(eventData.ecommerce_data && {
@@ -84,7 +91,7 @@ const sendEvent = async (eventData, config, agencyConfig = null) => {
   const payload = mapEventToMeta(eventData, actionSource);
 
   try {
-    await axios.post(
+    const response = await axios.post(
       `${META_ENDPOINT}/${datasetId}/events`,
       payload,
       {
@@ -96,8 +103,17 @@ const sendEvent = async (eventData, config, agencyConfig = null) => {
       }
     );
 
+    console.log('[Meta] Event sent successfully to Dataset:', datasetId);
     return { success: true };
   } catch (error) {
+    // Log detailed error info
+    console.error('[Meta] Delivery failed:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      error: error.response?.data,
+      eventName: eventData.event_name,
+      datasetId: datasetId
+    });
     throw new Error(`Meta delivery failed: ${error.message}`);
   }
 };
