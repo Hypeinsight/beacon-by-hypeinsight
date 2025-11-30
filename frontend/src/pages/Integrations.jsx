@@ -22,6 +22,7 @@ export default function Integrations() {
   const [metaDatasetId, setMetaDatasetId] = useState('');
   const [metaAccessToken, setMetaAccessToken] = useState('');
   const [metaActionSource, setMetaActionSource] = useState('website');
+  const [metaEvents, setMetaEvents] = useState(['*']);
   
   // Google Ads Config
   const [googleAdsEnabled, setGoogleAdsEnabled] = useState(false);
@@ -66,6 +67,7 @@ export default function Integrations() {
       setMetaDatasetId('');
       setMetaAccessToken('');
       setMetaActionSource('website');
+      setMetaEvents(['*']);
       setGoogleAdsEnabled(false);
       setGoogleAdsCustomerId('');
       setGoogleAdsConversionId('');
@@ -87,6 +89,7 @@ export default function Integrations() {
           setMetaDatasetId(destinations.meta.datasetId || destinations.meta.pixelId || '');
           setMetaAccessToken(destinations.meta.accessToken || '');
           setMetaActionSource(destinations.meta.actionSource || 'website');
+          setMetaEvents(destinations.meta.events || ['*']);
         }
         
         // Google Ads
@@ -139,6 +142,30 @@ export default function Integrations() {
     return ga4Events.includes('*') || ga4Events.includes(eventName);
   };
 
+  // Meta event selection helpers
+  const toggleMetaEventSelection = (eventName) => {
+    if (metaEvents.includes('*')) {
+      // If "all events" is selected, switch to selecting individual events
+      setMetaEvents(detectedEvents.map(e => e.name).filter(name => name !== eventName));
+    } else if (metaEvents.includes(eventName)) {
+      setMetaEvents(metaEvents.filter(name => name !== eventName));
+    } else {
+      setMetaEvents([...metaEvents, eventName]);
+    }
+  };
+
+  const selectAllMetaEvents = () => {
+    setMetaEvents(['*']);
+  };
+
+  const deselectAllMetaEvents = () => {
+    setMetaEvents([]);
+  };
+
+  const isMetaEventSelected = (eventName) => {
+    return metaEvents.includes('*') || metaEvents.includes(eventName);
+  };
+
   const saveConfig = async () => {
     setSaving(true);
     setMessage(null);
@@ -156,7 +183,8 @@ export default function Integrations() {
           datasetId: metaDatasetId,
           pixelId: metaDatasetId, // Keep pixelId for backward compatibility
           accessToken: metaAccessToken,
-          actionSource: metaActionSource
+          actionSource: metaActionSource,
+          events: metaEvents
         },
         googleAds: {
           enabled: googleAdsEnabled,
@@ -344,6 +372,35 @@ export default function Integrations() {
         
         {metaEnabled && (
           <div className="space-y-4">
+            {/* Setup Instructions */}
+            <details className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <summary className="cursor-pointer font-medium text-blue-900 text-sm">📖 Setup Instructions (Click to expand)</summary>
+              <div className="mt-3 space-y-3 text-sm text-gray-700">
+                <div>
+                  <strong className="block text-blue-900">Step 1: Get Dataset ID</strong>
+                  <p className="ml-4 mt-1">Go to <a href="https://business.facebook.com/events_manager2" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Meta Events Manager</a> → Data Sources → Copy your 15-digit Dataset/Pixel ID</p>
+                </div>
+                <div>
+                  <strong className="block text-blue-900">Step 2: Generate Access Token</strong>
+                  <p className="ml-4 mt-1">In Events Manager → Settings → Conversions API → Click "Generate Access Token" and copy it</p>
+                  <p className="ml-4 mt-1 text-xs italic">OR use agency System User token (recommended for agencies managing multiple clients)</p>
+                </div>
+                <div>
+                  <strong className="block text-blue-900">Step 3: Select Action Source</strong>
+                  <p className="ml-4 mt-1">Choose where events occur: "Website" for online, "Offline" for in-store/phone, etc.</p>
+                </div>
+                <div>
+                  <strong className="block text-blue-900">Step 4: Choose Events (Optional)</strong>
+                  <p className="ml-4 mt-1">Select which events to forward to Meta. Default: All events. Tip: Start with page_view and purchase events.</p>
+                </div>
+                <div>
+                  <strong className="block text-blue-900">Step 5: Save & Verify</strong>
+                  <p className="ml-4 mt-1">Click Save → Visit your website → Check Meta Events Manager → Test Events tab</p>
+                  <p className="ml-4 mt-1 text-xs italic">Look for events with source: "Server". Events appear within 5-15 minutes.</p>
+                </div>
+              </div>
+            </details>
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Dataset ID</label>
               <input
@@ -384,6 +441,59 @@ export default function Integrations() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
               <p className="text-xs text-gray-500 mt-1">Generate in Meta Events Manager → Settings → Conversions API. Leave blank to use agency-level System User token.</p>
+            </div>
+            
+            {/* Event Selection */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">Event Forwarding</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={selectAllMetaEvents}
+                    className="text-xs px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={deselectAllMetaEvents}
+                    className="text-xs px-2 py-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                  >
+                    Deselect All
+                  </button>
+                </div>
+              </div>
+              
+              {loadingEvents ? (
+                <div className="text-sm text-gray-500 py-4">Loading detected events...</div>
+              ) : detectedEvents.length === 0 ? (
+                <div className="text-sm text-gray-500 py-4">No events detected yet. Events will appear here once tracking starts.</div>
+              ) : (
+                <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-2">
+                  {detectedEvents.map((event) => (
+                    <label key={event.name} className="flex items-center justify-between hover:bg-gray-50 p-2 rounded cursor-pointer">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={isMetaEventSelected(event.name)}
+                          onChange={() => toggleMetaEventSelection(event.name)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="ml-3 text-sm text-gray-700">{event.name}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">{event.count.toLocaleString()} events</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              
+              <p className="text-xs text-gray-500 mt-2">
+                {metaEvents.includes('*') 
+                  ? 'All events will be forwarded to Meta.' 
+                  : `${metaEvents.length} event${metaEvents.length !== 1 ? 's' : ''} selected.`
+                } Custom events are prefixed with 'beacon_' in Meta for identification.
+              </p>
             </div>
           </div>
         )}
