@@ -20,7 +20,18 @@ const hashPII = (value) => {
 const mapEventToMeta = (eventData, actionSource = 'website') => {
   // Map event name to Meta format
   const eventName = eventData.event_name || eventData.event;
-  const metaEventName = eventName === 'page_view' ? 'PageView' : eventName;
+  
+  // Standard Meta events should keep their format, custom events get 'beacon_' prefix
+  let metaEventName;
+  if (eventName === 'page_view') {
+    metaEventName = 'PageView';
+  } else if (['Purchase', 'Lead', 'CompleteRegistration', 'AddToCart', 'InitiateCheckout', 'ViewContent'].includes(eventName)) {
+    // Keep standard Meta event names as-is
+    metaEventName = eventName;
+  } else {
+    // Add 'beacon_' prefix to custom events for identification
+    metaEventName = `beacon_${eventName}`;
+  }
   
   // Convert timestamp (milliseconds) to Unix timestamp (seconds)
   const eventTime = Math.floor((eventData.event_timestamp || eventData.timestamp || Date.now()) / 1000);
