@@ -8,10 +8,10 @@ const GA4_ENDPOINT = 'https://www.google-analytics.com/mp/collect';
 /**
  * Map event data to GA4 format
  */
-const mapEventToGA4 = (eventData) => {
-  // Prefix event name with 'beacon_' to avoid conflicts with native GA4 tracking
+const mapEventToGA4 = (eventData, eventPrefix = 'beacon') => {
+  // Prefix event name to avoid conflicts with native GA4 tracking
   const eventName = eventData.event_name || eventData.event || 'page_view';
-  const ga4EventName = `beacon_${eventName}`;
+  const ga4EventName = eventPrefix ? `${eventPrefix}_${eventName}` : eventName;
   
   const params = {
     client_id: eventData.client_id || eventData.clientId || 'unknown',
@@ -47,7 +47,8 @@ const sendEvent = async (eventData, config) => {
     throw new Error('GA4 measurement ID and API secret required');
   }
 
-  const payload = mapEventToGA4(eventData);
+  const eventPrefix = config.eventPrefix || 'beacon';
+  const payload = mapEventToGA4(eventData, eventPrefix);
 
   try {
     await axios.post(

@@ -17,11 +17,11 @@ const hashPII = (value) => {
 /**
  * Map event data to Meta format
  */
-const mapEventToMeta = (eventData, actionSource = 'website') => {
+const mapEventToMeta = (eventData, actionSource = 'website', eventPrefix = 'beacon') => {
   // Map event name to Meta format
   const eventName = eventData.event_name || eventData.event;
   
-  // Standard Meta events should keep their format, custom events get 'beacon_' prefix
+  // Standard Meta events should keep their format, custom events get prefix
   let metaEventName;
   if (eventName === 'page_view') {
     metaEventName = 'PageView';
@@ -29,8 +29,8 @@ const mapEventToMeta = (eventData, actionSource = 'website') => {
     // Keep standard Meta event names as-is
     metaEventName = eventName;
   } else {
-    // Add 'beacon_' prefix to custom events for identification
-    metaEventName = `beacon_${eventName}`;
+    // Add custom prefix to custom events for identification
+    metaEventName = eventPrefix ? `${eventPrefix}_${eventName}` : eventName;
   }
   
   // Convert timestamp (milliseconds) to Unix timestamp (seconds)
@@ -99,7 +99,8 @@ const sendEvent = async (eventData, config, agencyConfig = null) => {
 
   // Use configured action_source or default to 'website'
   const actionSource = config.actionSource || 'website';
-  const payload = mapEventToMeta(eventData, actionSource);
+  const eventPrefix = config.eventPrefix || 'beacon';
+  const payload = mapEventToMeta(eventData, actionSource, eventPrefix);
 
   try {
     const response = await axios.post(

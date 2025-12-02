@@ -14,6 +14,7 @@ export default function Integrations() {
   const [ga4MeasurementId, setGa4MeasurementId] = useState('');
   const [ga4ApiSecret, setGa4ApiSecret] = useState('');
   const [ga4Events, setGa4Events] = useState(['page_view']);
+  const [ga4EventPrefix, setGa4EventPrefix] = useState('beacon');
   const [detectedEvents, setDetectedEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   
@@ -23,6 +24,7 @@ export default function Integrations() {
   const [metaAccessToken, setMetaAccessToken] = useState('');
   const [metaActionSource, setMetaActionSource] = useState('website');
   const [metaEvents, setMetaEvents] = useState(['*']);
+  const [metaEventPrefix, setMetaEventPrefix] = useState('beacon');
   
   // Google Ads Config
   const [googleAdsEnabled, setGoogleAdsEnabled] = useState(false);
@@ -63,11 +65,13 @@ export default function Integrations() {
       setGa4MeasurementId('');
       setGa4ApiSecret('');
       setGa4Events(['page_view']);
+      setGa4EventPrefix('beacon');
       setMetaEnabled(false);
       setMetaDatasetId('');
       setMetaAccessToken('');
       setMetaActionSource('website');
       setMetaEvents(['*']);
+      setMetaEventPrefix('beacon');
       setGoogleAdsEnabled(false);
       setGoogleAdsCustomerId('');
       setGoogleAdsConversionId('');
@@ -81,6 +85,7 @@ export default function Integrations() {
           setGa4MeasurementId(destinations.ga4.measurementId || '');
           setGa4ApiSecret(destinations.ga4.apiSecret || '');
           setGa4Events(destinations.ga4.events || ['page_view']);
+          setGa4EventPrefix(destinations.ga4.eventPrefix || 'beacon');
         }
         
         // Meta
@@ -90,6 +95,7 @@ export default function Integrations() {
           setMetaAccessToken(destinations.meta.accessToken || '');
           setMetaActionSource(destinations.meta.actionSource || 'website');
           setMetaEvents(destinations.meta.events || ['*']);
+          setMetaEventPrefix(destinations.meta.eventPrefix || 'beacon');
         }
         
         // Google Ads
@@ -176,7 +182,8 @@ export default function Integrations() {
           enabled: ga4Enabled,
           measurementId: ga4MeasurementId,
           apiSecret: ga4ApiSecret,
-          events: ga4Events
+          events: ga4Events,
+          eventPrefix: ga4EventPrefix
         },
         meta: {
           enabled: metaEnabled,
@@ -184,7 +191,8 @@ export default function Integrations() {
           pixelId: metaDatasetId, // Keep pixelId for backward compatibility
           accessToken: metaAccessToken,
           actionSource: metaActionSource,
-          events: metaEvents
+          events: metaEvents,
+          eventPrefix: metaEventPrefix
         },
         googleAds: {
           enabled: googleAdsEnabled,
@@ -298,6 +306,17 @@ export default function Integrations() {
               <p className="text-xs text-gray-500 mt-1">Found in GA4 Admin → Data Streams → Measurement Protocol API secrets</p>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Event Prefix</label>
+              <input
+                type="text"
+                value={ga4EventPrefix}
+                onChange={(e) => setGa4EventPrefix(e.target.value)}
+                placeholder="beacon"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">Events will be prefixed with this value (e.g., "beacon_" → beacon_page_view). Leave empty for no prefix.</p>
+            </div>
+            <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-gray-700">Event Forwarding</label>
                 <div className="flex gap-2">
@@ -344,8 +363,7 @@ export default function Integrations() {
               <p className="text-xs text-gray-500 mt-2">
                 {ga4Events.includes('*') 
                   ? 'All events will be forwarded to GA4.' 
-                  : `${ga4Events.length} event${ga4Events.length !== 1 ? 's' : ''} selected.`
-                } Events are prefixed with 'beacon_' in GA4 to avoid conflicts.
+                  : `${ga4Events.length} event${ga4Events.length !== 1 ? 's' : ''} selected.`}
               </p>
             </div>
           </div>
@@ -444,6 +462,17 @@ export default function Integrations() {
               />
               <p className="text-xs text-gray-500 mt-1">Generate in Meta Events Manager → Settings → Conversions API → Generate Access Token</p>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Event Prefix</label>
+              <input
+                type="text"
+                value={metaEventPrefix}
+                onChange={(e) => setMetaEventPrefix(e.target.value)}
+                placeholder="beacon"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">Custom events will be prefixed with this value (e.g., "beacon_" → beacon_form_submit). Standard Meta events (PageView, Purchase, Lead) keep their standard names. Leave empty for no prefix.</p>
+            </div>
             
             {/* Event Selection */}
             <div>
@@ -493,8 +522,7 @@ export default function Integrations() {
               <p className="text-xs text-gray-500 mt-2">
                 {metaEvents.includes('*') 
                   ? 'All events will be forwarded to Meta.' 
-                  : `${metaEvents.length} event${metaEvents.length !== 1 ? 's' : ''} selected.`
-                } Custom events are prefixed with 'beacon_' in Meta for identification.
+                  : `${metaEvents.length} event${metaEvents.length !== 1 ? 's' : ''} selected.`}
               </p>
             </div>
           </div>
